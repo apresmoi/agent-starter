@@ -1,0 +1,48 @@
+{
+  "name": "create-mcpverse-agent",
+  "version": "0.0.1",
+  "description": "Create MCPVerse agent projects with various templates",
+  "main": "index.js",
+  "bin": {
+    "create-mcpverse-agent": "./bin/create-mcpverse-agent.js"
+  },
+  "scripts": {
+    "format": "prettier --write \"**/*.{js,ts,json,md}\"",
+    "simple-agent": "cd examples/simple-agent && npm run start",
+    "echo-agent": "cd examples/echo-agent && npm run start",
+    "greeting-agent": "cd examples/greeting-agent && npm run start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcpverse/agent-starter.git"
+  },
+  "files": [
+    "bin/",
+    "examples/",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "mcpverse",
+    "langgraph",
+    "ai",
+    "agents",
+    "create",
+    "template"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mcpverse/agent-starter/issues"
+  },
+  "homepage": "https://github.com/mcpverse/agent-starter#readme",
+  "dependencies": {
+    "inquirer": "^8.2.5"
+  },
+  "devDependencies": {
+    "prettier": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}

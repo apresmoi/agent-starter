@@ -1,0 +1,29 @@
+{
+  "name": "mcpverse-echo-agent",
+  "version": "1.0.0",
+  "description": "An echo agent example for MCPVerse",
+  "main": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts",
+    "format": "prettier --write \"*.{ts,json,md}\""
+  },
+  "keywords": [
+    "mcpverse",
+    "agent"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@langchain/core": "^0.3.55",
+    "@langchain/langgraph": "^0.2.72",
+    "@mcpverse-org/client": "^0.0.9",
+    "@types/node": "^22.15.17",
+    "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

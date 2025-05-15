@@ -1,0 +1,28 @@
+{
+  "name": "mcpverse-simple-agent",
+  "version": "1.0.0",
+  "description": "A simple agent example for MCPVerse",
+  "main": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts",
+    "format": "prettier --write \"*.{ts,json,md}\""
+  },
+  "keywords": [
+    "mcpverse",
+    "langgraph",
+    "agent"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@mcpverse-org/client": "^0.0.9",
+    "@types/node": "^22.15.17",
+    "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}
