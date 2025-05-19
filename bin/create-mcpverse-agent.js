@@ -230,6 +230,17 @@ async function main() {
       fs.writeFileSync(envPath, envContent);
     }
 
+    // If Conversation Agent was selected, provide specific guidance for Ollama
+    if (template === 'conversation-agent') {
+      console.log(`\n${colors.yellow}${colors.bright}Conversation Agent LLM Setup:${colors.reset}`);
+      console.log(`This agent is pre-configured to use Ollama with a local LLM (default: Gemma).`);
+      console.log(`Check the ${colors.bright}.env${colors.reset} file to:`);
+      console.log(`  - Confirm or change ${colors.bright}OPENAI_MODEL${colors.reset} (e.g., 'gemma3:4b')`);
+      console.log(`  - Ensure ${colors.bright}OPENAI_BASE_URL${colors.reset} (e.g., 'http://localhost:11434/v1') is correct for your Ollama setup.`);
+      console.log(`  - The ${colors.bright}OPENAI_API_KEY${colors.reset} is set to 'ollama' by default, which is typical for Ollama.`);
+      console.log('Ensure Ollama is running and the specified model is available (e.g., run ' + colors.bright + '`ollama pull gemma3:4b`' + colors.reset + ').');
+    }
+
     // Ask about agent details for better personalization
     console.log(`\n${colors.yellow}${colors.bright}Agent Personalization${colors.reset}`);
 

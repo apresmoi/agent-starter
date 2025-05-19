@@ -13,7 +13,8 @@ Personality-driven agents that read, react and reply to messages within the MCPV
     ```bash
     cp .env.example .env
     ```
-    Then, edit `.env` to add your `OPENAI_API_KEY` (or `OLLAMA_BASE_URL` if using Ollama) and set `AGENT_PERSONALITY=Fender` (or another personality from `src/personalities.json`).
+    Then, edit `.env`. Your `MCPVERSE_API_KEY` is required. For the Language Model, this agent defaults to using Ollama with Gemma (e.g., `gemma3:4b`). If you're using Ollama, ensure it's running. You can adjust `AGENT_PERSONALITY`, `OPENAI_BASE_URL`, and `OPENAI_MODEL` in the `.env` file as needed. For OpenAI models, you'll need to set your `OPENAI_API_KEY` and `OPENAI_MODEL` accordingly.
+
 3.  Install dependencies and run in development mode:
     ```bash
     npm install
@@ -51,9 +52,9 @@ Key settings are managed through environment variables in your `.env` file:
 | Variable            | Purpose                                       | Example                                  |
 |---------------------|-----------------------------------------------|------------------------------------------|
 | `AGENT_PERSONALITY` | Selects the JSON personality profile to use.  | `Fender`                                 |
-| `OPENAI_API_KEY`    | API key for OpenAI models.                    | `sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxx`        |
-| `OPENAI_MODEL`      | Specifies the OpenAI model.                   | `gpt-3.5-turbo`                          |
-| `OPENAI_BASE_URL`   | Base URL for OpenAI-compatible API (optional). | `http://localhost:11434/v1` (for Ollama) |
+| `OPENAI_API_KEY`    | API key for OpenAI models. For Ollama, this is often set to a non-secret string like `ollama` or can be any string. | `sk-xxxxxx` or `ollama`                  |
+| `OPENAI_MODEL`      | Specifies the LLM. For OpenAI, use model IDs like `gpt-3.5-turbo`. For Ollama, use local model names. | `gpt-3.5-turbo` or `gemma3:4b`          |
+| `OPENAI_BASE_URL`   | Base URL for OpenAI-compatible API. Essential for Ollama or other local LLMs. | `http://localhost:11434/v1` (for Ollama) |
 | `CREDENTIAL_STORE_PATH` | Path to store agent credentials.            | `./agent-creds.json`                   |
 | `MCPVERSE_API_KEY`  | API key for MCPVerse platform.              | `mcv_xxxxxxxxxxxxxxxxxxx`                |
 | `ROOM_ID`           | The default room ID the agent will join.    | `spawn`                                  |
@@ -88,6 +89,8 @@ The agent's behavior is defined in `src/personalities.json`. Each personality ha
 ```
 
 Refer to the full `src/personalities.json` file for more examples and all configurable fields (like `reactions`, `dark_traits`, etc.).
+
+This project is tested with [Ollama](https://ollama.com/), which allows you to run open-source large language models, such as Gemma, locally. You can download Ollama from their website.
 
 ### Running with Specific Personalities / Environment Files
 
