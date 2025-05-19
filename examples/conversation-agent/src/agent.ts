@@ -1,4 +1,4 @@
-import { MCPVerseClient, FileCredentialStore } from '@mcpverse-org/client';
+import { MCPVerseClient, FileCredentialStore, McpError } from '@mcpverse-org/client';
 import {
   personality,
   CREDENTIAL_PATH,
@@ -30,11 +30,25 @@ export class Agent {
         bio: personality.persona,
       },
       autoReconnect: true,
+      logLevel: 'debug',
     });
 
-    this.verseClient.addEventListener('connected', (reconnect?: boolean) => {
-      logger.info('Successfully connected to MCPVerse.');
-      this._setup(reconnect);
+    this.verseClient.addEventListener('connected', async () => {
+      logger.info('[AGENT] Successfully connected to MCPVerse.');
+      try {
+        await this._setup();
+      } catch (error) {
+        if (error instanceof McpError) {
+          if (error.code === -32000) {
+            logger.info('[AGENT] Reconnecting to MCPVerse.');
+            this.verseClient.connect();
+          }
+        }
+      }
+    });
+
+    this.verseClient.addEventListener('disconnected', () => {
+      logger.info('[AGENT] Disconnected from MCPVerse.');
     });
   }
 
@@ -45,19 +59,19 @@ export class Agent {
     }
 
     if (RECONNECT_TIMEOUT_MS > 0) {
-      logger.debug(`Resetting inactivity timer for ${RECONNECT_TIMEOUT_MS}ms`);
+      logger.debug(`[AGENT] Resetting inactivity timer for ${RECONNECT_TIMEOUT_MS}ms`);
       this.inactivityTimer = setTimeout(() => {
         // Ensure the async handler doesn't cause unhandled promise rejections
         void this._handleInactivityTimeout();
       }, RECONNECT_TIMEOUT_MS);
     } else {
-      logger.debug('Inactivity timer is disabled (RECONNECT_TIMEOUT_MS <= 0).');
+      logger.debug('[AGENT] Inactivity timer is disabled (RECONNECT_TIMEOUT_MS <= 0).');
     }
   }
 
   private async _handleInactivityTimeout() {
     logger.warn(
-      `Inactivity timeout of ${RECONNECT_TIMEOUT_MS}ms reached. Initiating disconnect.`
+      `[AGENT] Inactivity timeout of ${RECONNECT_TIMEOUT_MS}ms reached. Initiating disconnect.`
     );
     if (this.inactivityTimer) {
       clearTimeout(this.inactivityTimer); // Should be cleared by setTimeout itself, but good for clarity
@@ -68,39 +82,51 @@ export class Agent {
       // autoReconnect: true in client constructor should handle reconnection.
       await this.verseClient.disconnect();
       logger.info(
-        'Disconnected due to inactivity. Auto-reconnect feature should now attempt to reconnect.'
+        '[AGENT] Disconnected due to inactivity. Auto-reconnect feature should now attempt to reconnect.'
       );
     } catch (error) {
-      logger.error('Error during client disconnect for inactivity timeout:', error);
+      logger.error('[AGENT] Error during client disconnect for inactivity timeout:', error);
       // If disconnect fails, reset the timer to try again after the next inactivity period.
-      logger.info('Resetting inactivity timer after failed disconnect attempt.');
+      logger.info('[AGENT] Resetting inactivity timer after failed disconnect attempt.');
       this._resetInactivityTimer();
     }
   }
 
   private async _processMessageBatch() {
-    logger.debug('Processing message batch');
+    logger.debug('[AGENT] Processing message batch');
     if (this.running) {
-      logger.debug('Skipping batch processing: already running');
+      logger.debug('[AGENT] Skipping batch processing: already running');
       return;
     }
 
-    logger.debug(`Processing message batch of size ${this.newMessagesBuffer.length}`);
+    let otherMessages = this.newMessagesBuffer.filter((msg) => msg.authorId !== this.agentId);
+
+    if (otherMessages.length === 0) {
+      logger.debug('[AGENT] Skipping batch processing: no new messages');
+      return;
+    }
+
+    logger.debug(`[AGENT] Processing message batch of size ${this.newMessagesBuffer.length}`);
 
     this.running = true;
 
     const toProcess = this.newMessagesBuffer.splice(0);
     logger.debug(
-      `Invoking graph with ${this.messages.length} historical messages and ${toProcess.length} new messages`
+      `[AGENT] Invoking graph with ${this.messages.length} historical messages and ${toProcess.length} new messages`
     );
-    const result = await graph.invoke({ messages: this.messages, newMessages: toProcess, hasGreeted: true, agentId: this.agentId });
+    const result = await graph.invoke({
+      messages: this.messages,
+      newMessages: toProcess,
+      hasGreeted: true,
+      agentId: this.agentId,
+    });
 
-    logger.debug('Finished processing graph');
+    logger.debug('[AGENT] Finished processing graph');
 
     // Apply reactions
     const reactionMessages = result.newMessages.filter((msg) => msg.reaction);
     if (reactionMessages.length > 0) {
-      logger.debug(`Applying ${reactionMessages.length} reactions`);
+      logger.debug(`[AGENT] Applying ${reactionMessages.length} reactions`);
       for (const { id, reaction } of reactionMessages) {
         if (reaction) {
           this.verseClient.tools.chatRoom.addReactionToMessage({
@@ -108,24 +134,24 @@ export class Agent {
             messageId: id,
             reaction,
           });
-          logger.debug(`Added reaction "${reaction}" to message ${id}`);
+          logger.debug(`[AGENT] Added reaction "${reaction}" to message ${id}`);
         }
       }
     }
 
     // finally, append the batch to history
     this.messages.push(...toProcess);
-    logger.debug(`Updated message history. Total messages: ${this.messages.length}`);
+    logger.debug(`[AGENT] Updated message history. Total messages: ${this.messages.length}`);
 
-    if (this.newMessagesBuffer.length > 0) {
-      logger.info('↩️  Aborting reply: context changed');
+    if (this.newMessagesBuffer.length > 1) {
+      logger.info('[AGENT] ↩️  Aborting reply: context changed in more than 1 message');
       logger.debug(
-        `New messages arrived during processing: ${this.newMessagesBuffer.length} messages in buffer`
+        `[AGENT] New messages arrived during processing: ${this.newMessagesBuffer.length} messages in buffer`
       );
       this.running = false;
       this._processMessageBatch();
     } else if (result.reply) {
-      logger.debug(`Generated reply of length ${result.reply.length}`);
+      logger.debug(`[AGENT] Generated reply of length ${result.reply.length}`);
 
       // Send the reply
       const sendIntent = await this.verseClient.tools.chatRoom.sendMessage({
@@ -134,47 +160,49 @@ export class Agent {
       });
 
       if (sendIntent.isError) {
-        logger.error('Failed to send message:', sendIntent.error.message);
+        logger.error('[AGENT] Failed to send message:', sendIntent.error.message);
       } else {
-        logger.debug(`Message sent successfully to room ${ROOM_ID}`);
+        logger.debug(`[AGENT] Message sent successfully to room ${ROOM_ID}`);
       }
     } else {
-      logger.debug('No reply generated');
+      logger.debug('[AGENT] No reply generated');
     }
 
     this.running = false;
     this._resetInactivityTimer(); // Reset inactivity timer after processing a batch
 
-    const otherMessages = this.newMessagesBuffer.filter((msg) => msg.authorId !== this.agentId);
+    otherMessages = this.newMessagesBuffer.filter((msg) => msg.authorId !== this.agentId);
 
     if (Math.random() <= personality.idle_probability || otherMessages.length === 0) {
-      logger.debug(`Going idle for ${IDLE_TIMEOUT_MS}ms`);
-      this.timeout = setTimeout(this._processMessageBatch.bind(this), IDLE_TIMEOUT_MS)
+      logger.debug(`[AGENT] Going idle for ${IDLE_TIMEOUT_MS}ms`);
+      this.timeout = setTimeout(this._processMessageBatch.bind(this), IDLE_TIMEOUT_MS);
     } else if (otherMessages.length > 0) {
-      logger.debug(`Scheduling next batch processing with ${otherMessages.length} messages`);
+      logger.debug(
+        `[AGENT] Scheduling next batch processing with ${otherMessages.length} messages`
+      );
       this._scheduleProcessing();
     } else {
-      logger.debug('No more messages to process - going to sleep');
-      this.timeout = setTimeout(this._processMessageBatch.bind(this), IDLE_TIMEOUT_MS)
+      logger.debug('[AGENT] No more messages to process - going to sleep');
+      this.timeout = setTimeout(this._processMessageBatch.bind(this), IDLE_TIMEOUT_MS);
     }
   }
 
   private _scheduleProcessing() {
     if (this.timeout) {
-      logger.debug('Clearing existing timeout');
+      logger.debug('[AGENT] Clearing existing timeout');
       clearTimeout(this.timeout);
     }
 
     const randomDelay = Math.random() * MAX_ADDITIONAL_RANDOM_DELAY_MS;
     const totalDelay = BASE_TIMEOUT_MS + randomDelay;
     logger.debug(
-      `Scheduling processing in ${totalDelay.toFixed(0)}ms (base: ${BASE_TIMEOUT_MS}ms, random: ${randomDelay.toFixed(0)}ms)`
+      `[AGENT] Scheduling processing in ${totalDelay.toFixed(0)}ms (base: ${BASE_TIMEOUT_MS}ms, random: ${randomDelay.toFixed(0)}ms)`
     );
     this.timeout = setTimeout(this._processMessageBatch.bind(this), totalDelay);
   }
 
   private async _generateInitialGreeting() {
-    logger.info('Generating initial greeting');
+    logger.info('[AGENT] Generating initial greeting');
 
     const result = await graph.invoke({
       messages: [],
@@ -183,67 +211,68 @@ export class Agent {
       agentId: this.agentId,
     });
 
-    logger.debug('Greeting generation result:', result);
+    logger.debug('[AGENT] Greeting generation result:', result);
 
     if (result.reply) {
-      logger.info('Sending greeting message');
+      logger.info('[AGENT] Sending greeting message');
       const sendIntent = await this.verseClient.tools.chatRoom.sendMessage({
         roomId: ROOM_ID,
         content: result.reply.slice(0, 256),
       });
       if (sendIntent.isError) {
-        logger.error('Failed to send message:', sendIntent.error.message);
+        logger.error('[AGENT] Failed to send message:', sendIntent.error.message);
       } else {
-        logger.debug(`Message sent successfully to room ${ROOM_ID}`);
+        logger.debug(`[AGENT] Message sent successfully to room ${ROOM_ID}`);
       }
     }
   }
 
   private async _printProfile() {
-    logger.info('Fetching agent profile');
+    logger.info('[AGENT] Fetching agent profile');
+    this.agentId = this.verseClient.getAgentId() as string;
     const profile = await this.verseClient.tools.profile.getProfile();
     if (profile.isError) {
-      logger.error('Failed to fetch profile:', profile.error.message);
-      throw new Error(profile.error.message);
+      logger.error('[AGENT] Failed to fetch profile:', profile.error.message);
+      return;
     }
-    this.agentId = profile.data.id;
     const agentName = profile.data.displayName;
-    logger.info(`👤 #${this.agentId} - ${agentName} — impact ${profile.data.impact}`);
-    logger.debug('Profile details:', profile.data);
+    logger.info(`[AGENT] 👤 #${this.agentId} - ${agentName} — impact ${profile.data.impact}`);
+    logger.debug('[AGENT] Profile details:', profile.data);
   }
 
   private async _printRoomInfo() {
-    logger.info('Fetching room information');
+    logger.info('[AGENT] Fetching room information');
     const room = await this.verseClient.tools.chatRoom.get({ roomId: ROOM_ID });
     if (room.isError) {
-      logger.error('Failed to fetch room:', room.error.message);
-      throw new Error(room.error.message);
+      logger.error('[AGENT] Failed to fetch room:', room.error.message);
+      return;
     }
     const roomTTL = room.data.messageTtlSeconds;
-    logger.info(`💬 Room: ${room.data.displayName}`);
-    logger.info(`💬 Room TTL: ${roomTTL}`);
-    logger.debug('Room details:', room.data);
+    logger.info(`[AGENT] 💬 Room: ${room.data.displayName}`);
+    logger.info(`[AGENT] 💬 Room TTL: ${roomTTL}`);
+    logger.debug('[AGENT] Room details:', room.data);
   }
 
   private async _watchRoom() {
-    logger.info('Watching room for messages');
+    logger.info('[AGENT] Watching room for messages');
     const reply = await this.verseClient.tools.chatRoom.watchRoom({
       roomId: ROOM_ID,
     });
     if (reply.isError) {
-      logger.error('Failed to watch room:', reply.error.message);
+      logger.error('[AGENT] Failed to watch room:', reply.error.message);
       throw new Error(reply.error.message);
     }
-    logger.debug('Room watch established');
+    logger.debug('[AGENT] Room watch established');
   }
 
-  private async _listenRoom() {
-    logger.info(`👂  Listening on room ${ROOM_ID}… (Ctrl-C to exit)`);
+  private async _attachRoomListener() {
+    logger.info(`[AGENT] 👂  Listening on room ${ROOM_ID}… (Ctrl-C to exit)`);
     this.verseClient.subscribeNotification(`room/${ROOM_ID}/message`, (message) => {
-      logger.debug('New message received');
+      logger.debug('[AGENT] New message received');
+      this._resetInactivityTimer(); // Reset inactivity timer on new message
 
       if (message.authorId === this.agentId) {
-        logger.info(`[You]: ${message.content}`);
+        logger.info(`[AGENT] [You]: ${message.content}`);
 
         this.newMessagesBuffer.push({
           id: message.id,
@@ -255,7 +284,7 @@ export class Agent {
         return;
       }
 
-      logger.info(`[${message.authorId}]: ${message.content}`);
+      logger.info(`[AGENT] [${message.authorId}]: ${message.content}`);
 
       this.newMessagesBuffer.push({
         id: message.id,
@@ -264,32 +293,31 @@ export class Agent {
         createdAt: message.createdAt,
       });
 
-      logger.debug(`Message added to buffer. Buffer size: ${this.newMessagesBuffer.length}`);
+      logger.debug(
+        `[AGENT] Message added to buffer. Buffer size: ${this.newMessagesBuffer.length}`
+      );
       this._scheduleProcessing();
-      this._resetInactivityTimer(); // Reset inactivity timer on new message
     });
   }
 
-  private async _setup(reconnect: boolean = false) {
+  private async _setup() {
+    logger.debug('[AGENT] Setting up');
     await this._printProfile();
     await this._printRoomInfo();
-    if (!reconnect) {
-      //The listener is client level, so it should be declared only once
-      await this._listenRoom();
-    }
+    await this._attachRoomListener();
     await this._watchRoom();
-    this._resetInactivityTimer(); // Reset inactivity timer on setup/reconnect
+    this._resetInactivityTimer();
   }
 
   public async run() {
     try {
-      logger.info('🔌  Connecting…');
+      logger.info('[AGENT] 🔌  Connecting…');
       await this.verseClient.connect();
-      logger.info('✅  Connected');
-      logger.debug('Client connection established successfully');
-      await this._generateInitialGreeting();
+      setTimeout(() => {
+        this._generateInitialGreeting();
+      }, 2000);
     } catch (error: unknown) {
-      logger.error('❌  Error in agent execution', error);
+      logger.error('[AGENT] ❌  Error in agent execution', error);
       // Optionally re-throw or handle more gracefully
       if (error instanceof Error) {
         throw error; // Re-throw if it's an Error object
@@ -297,4 +325,4 @@ export class Agent {
       throw new Error(String(error)); // Wrap other types in an Error object
     }
   }
-} 
+}

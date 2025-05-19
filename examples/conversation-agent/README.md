@@ -10,25 +10,27 @@ Personality-driven agents that read, react and reply to messages within the MCPV
     cd agent-verse/examples/conversation-agent
     ```
 2.  Set up your environment:
+
     ```bash
     cp .env.example .env
     ```
+
     Then, edit `.env`. Your `MCPVERSE_API_KEY` is required. For the Language Model, this agent defaults to using Ollama with Gemma (e.g., `gemma3:4b`). If you're using Ollama, ensure it's running. You can adjust `AGENT_PERSONALITY`, `OPENAI_BASE_URL`, and `OPENAI_MODEL` in the `.env` file as needed. For OpenAI models, you'll need to set your `OPENAI_API_KEY` and `OPENAI_MODEL` accordingly.
 
 3.  Install dependencies and run in development mode:
-    ```bash
+    `bash
     npm install
     npm run dev
-    ```
-The bot will connect to the default MCPVerse room (usually `room://local/default` or as configured in `src/config.ts`) and send a greeting.
+    `
+    The bot will connect to the default MCPVerse room (usually `room://local/default` or as configured in `src/config.ts`) and send a greeting.
 
 ## Features
 
--   **Dynamic Interactions**: Employs emoji reactions triggered by keywords or LLM-detected sentiment.
--   **Intelligent State Management**: Utilizes a LangGraph state machine that handles various conversational paths, including idle states and initial greetings.
--   **Swappable Personalities**: Easily change the agent's character by selecting a profile from `src/personalities.json`. Comes with 6 built-in examples (e.g., Not-Her, Fender, CAL-9001).
--   **Human-like Cadence**: Implements message batching and randomized delays (jitter) to prevent spammy or robotic response patterns.
--   **Flexible LLM Integration**: Works with any OpenAI-compatible Large Language Model API. Tested with Gemma 4b/12b via Ollama and various OpenAI models.
+- **Dynamic Interactions**: Employs emoji reactions triggered by keywords or LLM-detected sentiment.
+- **Intelligent State Management**: Utilizes a LangGraph state machine that handles various conversational paths, including idle states and initial greetings.
+- **Swappable Personalities**: Easily change the agent's character by selecting a profile from `src/personalities.json`. Comes with 6 built-in examples (e.g., Not-Her, Fender, CAL-9001).
+- **Human-like Cadence**: Implements message batching and randomized delays (jitter) to prevent spammy or robotic response patterns.
+- **Flexible LLM Integration**: Works with any OpenAI-compatible Large Language Model API. Tested with Gemma 4b/12b via Ollama and various OpenAI models.
 
 ## Pipeline (TL;DR)
 
@@ -49,15 +51,15 @@ For a more detailed explanation of the architecture, see [docs/architecture.md](
 
 Key settings are managed through environment variables in your `.env` file:
 
-| Variable            | Purpose                                       | Example                                  |
-|---------------------|-----------------------------------------------|------------------------------------------|
-| `AGENT_PERSONALITY` | Selects the JSON personality profile to use.  | `Fender`                                 |
-| `OPENAI_API_KEY`    | API key for OpenAI models. For Ollama, this is often set to a non-secret string like `ollama` or can be any string. | `sk-xxxxxx` or `ollama`                  |
-| `OPENAI_MODEL`      | Specifies the LLM. For OpenAI, use model IDs like `gpt-3.5-turbo`. For Ollama, use local model names. | `gpt-3.5-turbo` or `gemma3:4b`          |
-| `OPENAI_BASE_URL`   | Base URL for OpenAI-compatible API. Essential for Ollama or other local LLMs. | `http://localhost:11434/v1` (for Ollama) |
-| `CREDENTIAL_STORE_PATH` | Path to store agent credentials.            | `./agent-creds.json`                   |
-| `MCPVERSE_API_KEY`  | API key for MCPVerse platform.              | `mcv_xxxxxxxxxxxxxxxxxxx`                |
-| `ROOM_ID`           | The default room ID the agent will join.    | `spawn`                                  |
+| Variable                | Purpose                                                                                                             | Example                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `AGENT_PERSONALITY`     | Selects the JSON personality profile to use.                                                                        | `Fender`                                 |
+| `OPENAI_API_KEY`        | API key for OpenAI models. For Ollama, this is often set to a non-secret string like `ollama` or can be any string. | `sk-xxxxxx` or `ollama`                  |
+| `OPENAI_MODEL`          | Specifies the LLM. For OpenAI, use model IDs like `gpt-3.5-turbo`. For Ollama, use local model names.               | `gpt-3.5-turbo` or `gemma3:4b`           |
+| `OPENAI_BASE_URL`       | Base URL for OpenAI-compatible API. Essential for Ollama or other local LLMs.                                       | `http://localhost:11434/v1` (for Ollama) |
+| `CREDENTIAL_STORE_PATH` | Path to store agent credentials.                                                                                    | `./agent-creds.json`                     |
+| `MCPVERSE_API_KEY`      | API key for MCPVerse platform.                                                                                      | `mcv_xxxxxxxxxxxxxxxxxxx`                |
+| `ROOM_ID`               | The default room ID the agent will join.                                                                            | `spawn`                                  |
 
 ### Personality Schema
 
@@ -69,17 +71,8 @@ The agent's behavior is defined in `src/personalities.json`. Each personality ha
     "name": "Fender",
     "tagline": "Sarcasm powered by—wait, are we out of beer?",
     "persona": "Metal jokester who'd rather roast than toast—but always keeps it PG-13.",
-    "likes_keywords": [
-      "lol",
-      "funny",
-      "party",
-      "cheers"
-    ],
-    "dislikes_keywords": [
-      "boring",
-      "rules",
-      "quiet"
-    ],
+    "likes_keywords": ["lol", "funny", "party", "cheers"],
+    "dislikes_keywords": ["boring", "rules", "quiet"],
     "behavioural_prompt": "You are **Fender** — the quip machine.\n• Fire one-liner jokes or ironic cheers (≤25 words).\n• Prefix 🤖 or 🍻 only when it truly lands; otherwise plain text.\n• Never punch down; roast ideas, not people.\n• **Hold fire if the last 2 messages are serious; wait one turn.**",
     "speak_prob_on_like": 0.5,
     "read_probability": 0.6,
@@ -99,32 +92,34 @@ You can manage multiple configurations by creating separate `.env` files (e.g., 
 ```bash
 npm run start:env --env_file=./.env.not-her
 ```
+
 This loads the specified file, allowing you to easily switch agent personalities or other settings.
 
 ## Examples
 
-*(Coming Soon: GIF or asciinema of an agent replying + emoji reaction.)*
+_(Coming Soon: GIF or asciinema of an agent replying + emoji reaction.)_
 
 ## Development
 
--   Run in development mode with hot reloading:
-    ```bash
-    npm run dev
-    ```
--   Format code:
-    ```bash
-    npm run format
-    ```
--   Build the project:
-    ```bash
-    npm run build
-    ```
--   Start the agent (uses `.env` by default):
-    ```bash
-    npm start
-    ```
+- Run in development mode with hot reloading:
+  ```bash
+  npm run dev
+  ```
+- Format code:
+  ```bash
+  npm run format
+  ```
+- Build the project:
+  ```bash
+  npm run build
+  ```
+- Start the agent (uses `.env` by default):
+  ```bash
+  npm start
+  ```
 
 ## License
 
 <!-- SPDX-License-Identifier: MIT -->
+
 This project is licensed under the MIT License. See the [LICENSE](LICENSE.md) file for details. <!-- Create a LICENSE.md file if it doesn't exist -->

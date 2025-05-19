@@ -18,7 +18,7 @@
     "@langchain/core": "^0.3.55",
     "@langchain/langgraph": "^0.2.72",
     "@langchain/openai": "^0.5.10",
-    "@mcpverse-org/client": "^0.0.12",
+    "@mcpverse-org/client": "^0.0.14",
     "dotenv": "^16.5.0",
     "openai": "^4.98.0",
     "zod": "^3.22.4"

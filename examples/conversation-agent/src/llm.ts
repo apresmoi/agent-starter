@@ -11,7 +11,7 @@ import { logger } from './config';
 const llm = new ChatOpenAI(OPENAI_CONFIG);
 const llmReply = new ChatOpenAI({ ...OPENAI_CONFIG, maxTokens: 80 });
 
-logger.debug('Initialized LLM instances with config:', OPENAI_CONFIG);
+logger.debug('[LLM] Initialized LLM instances with config:', OPENAI_CONFIG);
 
 // Zod schema for structured LLM output during message review
 const messageReviewSchema = z.object({
@@ -42,17 +42,18 @@ const messageReviewSchema = z.object({
     .string()
     .nullable()
     .optional()
-    .describe(
-      "A fleeting random thought you had while performing your review."
-    ),
+    .describe('A fleeting random thought you had while performing your review.'),
 });
 
 const llmWithReviewSchema = llm.withStructuredOutput(messageReviewSchema);
 
-export async function reviewMessage(message: Message, personality: BotPersonality): Promise<Message> {
-  logger.debug('Starting message review for message ID:', message.id);
-  logger.debug('Message content:', message.content);
-  logger.debug('Using personality:', personality.name);
+export async function reviewMessage(
+  message: Message,
+  personality: BotPersonality
+): Promise<Message> {
+  logger.debug('[LLM] Starting message review for message ID:', message.id);
+  logger.debug('[LLM] Message content:', message.content);
+  logger.debug('[LLM] Using personality:', personality.name);
 
   const prompt = ChatPromptTemplate.fromMessages([
     [
@@ -74,16 +75,20 @@ Respond using the structured output format.`,
   ]);
 
   try {
-    logger.debug('Invoking LLM for message review');
+    logger.debug('[LLM] Invoking LLM for message review');
     const chain = prompt.pipe(llmWithReviewSchema);
     const review = await chain.invoke({ messageContent: message.content });
-    logger.debug('Received review from LLM:', review);
-    
+    logger.debug('[LLM] Received review from LLM:', review);
+
     let reaction = undefined;
     if (review.like) {
-      reaction = personality.reactions.like[Math.floor(Math.random() * personality.reactions.like.length)];
+      reaction =
+        personality.reactions.like[Math.floor(Math.random() * personality.reactions.like.length)];
     } else if (review.dislike) {
-      reaction = personality.reactions.dislike[Math.floor(Math.random() * personality.reactions.dislike.length)];
+      reaction =
+        personality.reactions.dislike[
+          Math.floor(Math.random() * personality.reactions.dislike.length)
+        ];
     }
 
     const result = {
@@ -96,10 +101,10 @@ Respond using the structured output format.`,
       randomThought: review.randomThought,
       reaction,
     };
-    logger.debug('Returning reviewed message:', result);
+    logger.debug('[LLM] Returning reviewed message:', result);
     return result;
   } catch (error) {
-    logger.error(`Error during LLM review for message ID ${message.id}:`, error);
+    logger.error(`[LLM] Error during LLM review for message ID ${message.id}:`, error);
     return {
       ...message,
       interesting: false,
@@ -156,8 +161,8 @@ IMPORTANT:
 const getOthersMessagesPrompt = (messages: Message[]) => `
 ### PREVIOUS CONVERSATION HISTORY ###
 ${messages
-    .map((msg) => {
-      return `-----
+  .map((msg) => {
+    return `-----
 - Author: ${msg.authorId}
 - Message: ${msg.content}
 - ${msg.like ? 'You liked this message.' : msg.dislike ? 'You disliked this message.' : ''}
@@ -165,16 +170,16 @@ ${messages
 - Critical thought you had about this message: ${msg.negativeAlternativeThought}
 -----
 `;
-    })
-    .join('\n')}
+  })
+  .join('\n')}
 `;
 
 export async function generateGreeting(
   personality: BotPersonality,
   agentId: string
 ): Promise<string> {
-  logger.debug('Generating greeting for agent:', agentId);
-  logger.debug('Using personality:', personality.name);
+  logger.debug('[LLM] Generating greeting for agent:', agentId);
+  logger.debug('[LLM] Using personality:', personality.name);
 
   const replyPrompt = ChatPromptTemplate.fromMessages([
     [
@@ -186,14 +191,14 @@ ${getInitialExpressionPrompt(personality)}`,
   ]);
 
   try {
-    logger.debug('Invoking LLM for greeting generation');
+    logger.debug('[LLM] Invoking LLM for greeting generation');
     const chain = replyPrompt.pipe(llmReply);
     const response = await chain.invoke({});
     const result = response.content.toString().trim();
-    logger.debug('Generated greeting:', result);
+    logger.debug('[LLM] Generated greeting:', result);
     return result;
   } catch (error) {
-    logger.error(`Error generating initial expression: `, error);
+    logger.error(`[LLM] Error generating initial expression: `, error);
     return '';
   }
 }
@@ -203,9 +208,9 @@ export async function generateReply(
   personality: BotPersonality,
   agentId: string
 ): Promise<string> {
-  logger.debug('Generating reply for agent:', agentId);
-  logger.debug('Number of messages to consider:', messages.length);
-  logger.debug('Using personality:', personality.name);
+  logger.debug('[LLM] Generating reply for agent:', agentId);
+  logger.debug('[LLM] Number of messages to consider:', messages.length);
+  logger.debug('[LLM] Using personality:', personality.name);
 
   const systemMessage = new SystemMessage({
     content: `${getPersonaPrompt(personality)}
@@ -225,11 +230,11 @@ export async function generateReply(
     [] as { index: number; message: Message }[]
   );
 
-  logger.debug('Found bot messages:', yourMessages.length);
+  logger.debug('[LLM] Found bot messages:', yourMessages.length);
 
   // Get the last 3 messages from this bot
   const yourLastThreeMessages = yourMessages.slice(-3);
-  logger.debug('Using last 3 bot messages for context');
+  logger.debug('[LLM] Using last 3 bot messages for context');
 
   // If we have previous messages, build the history
   if (yourLastThreeMessages.length > 0) {
@@ -239,7 +244,9 @@ export async function generateReply(
 
       // Get all messages between this bot message and the next one (or end of all messages)
       const otherMessages = messages.slice(messageIndex + 1, nextMessageIndex);
-      logger.debug(`Processing message group ${i + 1}/${yourLastThreeMessages.length}, found ${otherMessages.length} other messages`);
+      logger.debug(
+        `[LLM] Processing message group ${i + 1}/${yourLastThreeMessages.length}, found ${otherMessages.length} other messages`
+      );
 
       // Add the other messages to the history
       if (otherMessages.length > 0) {
@@ -260,7 +267,7 @@ export async function generateReply(
       }
     }
   } else {
-    logger.debug('No previous bot messages found, treating all messages as initial input');
+    logger.debug('[LLM] No previous bot messages found, treating all messages as initial input');
     // Bot has no messages in yourLastThreeMessages (e.g., first reply, or history is clear)
     // Treat all current messages as the initial human input.
     if (messages.length > 0) {
@@ -272,20 +279,20 @@ export async function generateReply(
     }
   }
 
-  logger.debug('Built conversation history with messages:', historyMessages.length);
+  logger.debug('[LLM] Built conversation history with messages:', historyMessages.length);
 
   const replyPrompt = ChatPromptTemplate.fromMessages([systemMessage, ...historyMessages]);
 
   try {
-    logger.debug('Invoking LLM for reply generation');
+    logger.debug('[LLM] Invoking LLM for reply generation');
     const chain = replyPrompt.pipe(llm);
     const response = await chain.invoke({});
     const replyContent = response.content.toString().trim();
     const result = replyContent && replyContent !== 'NO_REPLY' ? replyContent : '';
-    logger.debug('Generated reply:', result);
+    logger.debug('[LLM] Generated reply:', result);
     return result;
   } catch (error) {
-    logger.error(`Error generating or sending consolidated reply: `, error);
+    logger.error(`[LLM] Error generating or sending consolidated reply: `, error);
     return '';
   }
 }

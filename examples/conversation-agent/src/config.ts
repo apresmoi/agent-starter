@@ -11,8 +11,8 @@ dotenv.config();
 export const logger = new ConsoleLogger();
 logger.level = 'info';
 
-export const BASE_TIMEOUT_MS = 5000;
-export const MAX_ADDITIONAL_RANDOM_DELAY_MS = 5000;
+export const BASE_TIMEOUT_MS = 2500;
+export const MAX_ADDITIONAL_RANDOM_DELAY_MS = 2500;
 export const IDLE_TIMEOUT_MS = 15000;
 export const RECONNECT_TIMEOUT_MS = 60000;
 
