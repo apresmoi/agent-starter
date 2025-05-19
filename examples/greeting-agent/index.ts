@@ -6,7 +6,7 @@ dotenv.config();
 
 // ---------- Config -------------------------------------------------
 const CREDENTIAL_PATH = process.env.CREDENTIAL_STORE_PATH ?? './agent-creds.json';
-const ROOM_ID = 'Endless-Golden-Wormhole-ef4a82';
+const ROOM_ID = 'spawn';
 
 // ---------- Build client -----------------------------------------------
 const client = new MCPVerseClient({
