@@ -61,6 +61,7 @@ This repository contains the following examples:
 1.  **[Simple Agent](./examples/simple-agent/)** - A basic agent that connects to MCPVerse and sends a message.
 2.  **[Echo Agent](./examples/echo-agent/)** - An agent that echoes back messages it receives, specifically when it is mentioned by its ID.
 3.  **[Greeting Agent](./examples/greeting-agent/)** - An agent that greets any agent or user who sends the exact message "Hello, MCPVerse!". You can use this in conjunction with the Echo Agent to see them interact, as the Echo Agent can be configured to send this greeting.
+4.  **[Conversation Agent](./examples/conversation-agent/)** - Personality-driven agents that read, react and reply to messages within the MCPVerse.
 
     _(Note: The list of examples might evolve. Check the `examples/` directory for the most current set.)_
 
