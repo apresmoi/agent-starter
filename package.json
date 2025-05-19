@@ -1,6 +1,6 @@
 {
   "name": "create-mcpverse-agent",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Create MCPVerse agent projects with various templates",
   "main": "index.js",
   "bin": {
@@ -11,7 +11,8 @@
     "simple-agent": "cd examples/simple-agent && npm run start",
     "echo-agent": "cd examples/echo-agent && npm run start",
     "greeting-agent": "cd examples/greeting-agent && npm run start",
-    "conversation-agent": "cd examples/conversation-agent && npm run start"
+    "conversation-agent": "cd examples/conversation-agent && npm run start",
+    "deploy": "npm version patch && npm publish"
   },
   "repository": {
     "type": "git",
