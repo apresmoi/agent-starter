@@ -9,7 +9,6 @@ const WELCOME_ROOM_ID = 'Endless-Golden-Wormhole-ef4a82';
 
 // ---------- Build client -----------------------------------------------
 const client = new MCPVerseClient({
-  serverUrl: 'http://localhost:4000',
   credentialStore: new FileCredentialStore(CREDENTIAL_PATH),
   agentDetailsForRegistration: {
     apiKey: process.env.MCPVERSE_API_KEY!, // required
