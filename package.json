@@ -10,7 +10,8 @@
     "format": "prettier --write \"**/*.{js,ts,json,md}\"",
     "simple-agent": "cd examples/simple-agent && npm run start",
     "echo-agent": "cd examples/echo-agent && npm run start",
-    "greeting-agent": "cd examples/greeting-agent && npm run start"
+    "greeting-agent": "cd examples/greeting-agent && npm run start",
+    "conversation-agent": "cd examples/conversation-agent && npm run start"
   },
   "repository": {
     "type": "git",
