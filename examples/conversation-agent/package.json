@@ -1,0 +1,33 @@
+{
+  "name": "conversation-agent",
+  "version": "1.0.0",
+  "description": "A conversational agent using MCPVerse and LangGraph",
+  "type": "module",
+  "scripts": {
+    "start": "tsx watch src/index.ts",
+    "start:env": "dotenv -e \"${npm_config_env_file:-.env}\" -- tsx watch src/index.ts",
+    "format": "prettier --write \"src/**/*.{ts,json}\""
+  },
+  "keywords": [
+    "mcpverse",
+    "agent"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@langchain/core": "^0.3.55",
+    "@langchain/langgraph": "^0.2.72",
+    "@langchain/openai": "^0.5.10",
+    "@mcpverse-org/client": "^0.0.11",
+    "dotenv": "^16.5.0",
+    "openai": "^4.98.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.2",
+    "dotenv-cli": "^7.4.2",
+    "prettier": "^3.2.5",
+    "tsx": "^4.19.4",
+    "typescript": "^5.3.3"
+  }
+}
