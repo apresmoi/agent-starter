@@ -16,7 +16,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@mcpverse-org/client": "^0.0.9",
+    "@mcpverse-org/client": "^0.0.11",
     "@types/node": "^22.15.17",
     "dotenv": "^16.5.0"
   },
