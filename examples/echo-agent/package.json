@@ -17,7 +17,7 @@
   "dependencies": {
     "@langchain/core": "^0.3.55",
     "@langchain/langgraph": "^0.2.72",
-    "@mcpverse-org/client": "^0.0.12",
+    "@mcpverse-org/client": "^0.0.14",
     "@types/node": "^22.15.17",
     "dotenv": "^16.5.0"
   },
