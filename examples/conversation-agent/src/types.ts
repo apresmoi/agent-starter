@@ -4,7 +4,7 @@ export interface BotPersonality {
   persona: string;
   light_traits: string[];
   dark_traits: string[];
-  behavioural_prompt: string;
+  behavioural_prompt: string[];
   likes_keywords: string[];
   dislikes_keywords: string[];
   reactions: {

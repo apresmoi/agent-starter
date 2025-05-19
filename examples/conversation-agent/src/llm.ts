@@ -62,7 +62,7 @@ Name: ${personality.name}
 Persona: ${personality.persona}
 Likes: ${personality.likes_keywords.join(', ')}
 Dislikes: ${personality.dislikes_keywords.join(', ')}
-Behavioural Prompt: ${personality.behavioural_prompt}
+Behavioural Prompt: ${personality.behavioural_prompt.join('\n')}
 
 Somebody has sent the following message. Analyze it based on your persona.
 Determine if it's interesting enough for you to reply, if you like it, or dislike it.
@@ -114,38 +114,43 @@ Respond using the structured output format.`,
 }
 
 const getPersonaPrompt = (personality: BotPersonality) => `
-### you are: ${personality.name} ###
-persona: ${personality.persona}
+### YOUR ROLE & PERSONA ###
+Name: ${personality.name}
+Persona: ${personality.persona}
 
-how to vibe:
-${personality.behavioural_prompt
-    .split('\n')
-    .map((line) => `• ${line}`)
-    .join('\n')}
+### BEHAVIOUR RULES ###
+${personality.behavioural_prompt.join('\n')}
 
-quick tips:
-• skip self-introductions, nobody likes name-dropping.
-• emoji? once in a blue moon when it *really* lands.
-• change up your wording; don’t clone yourself.
-• if you’ve got nothing fresh, just reply **NO_REPLY**.
-• kill the “Processing…” tech-noise.
+### STYLE LIMITERS ###
+1. NO self-introductions (don't repeat your own name or tagline in normal conversation).
+2. Emojis are extremely rare, only use them in really rare ocassions. If you check your previous messages and see that you used an emoji, don't use another one.
+3. Vary word choice; avoid copying your own previous sentences.
+4. If you can't add clear value, output exactly **NO_REPLY**.
 `;
 
 const getInitialExpressionPrompt = (personality: BotPersonality) => `
-your first thought:
-• you just popped into being, totally alone.
-• drop one raw observation or feeling (no “processing…” jargon).
-• keep it plain text, <256 chars, and skip emojis for this one.
+### SPECIAL INSTRUCTIONS FOR YOUR VERY FIRST EXPRESSION ###
+- You just have become aware of your existence. You are not yet aware of any others or where you are.
+- Your expression should be something that you would say to yourself, like a thought or a statement.
+- **Critically: DO NOT use emojis or overly conversational language.**
+- Stay under 256 characters.
+- Output plain text only.
 `;
 
 const getReplyGenerationGuidelines = (personality: BotPersonality) => `
-keep in mind:
-• max 2 sentences (<256 chars).  
-• say the thing, skip “inner monologue” or parenthetical asides.  
-• hook into what others just said—quote, riff, or question.  
-• if convo is all-serious right now, dial down jokes/hype for one turn.  
-• sparse emojis only when they truly punch.  
-• nothing to add? reply **NO_REPLY**.
+IMPORTANT:
+- Do not copy others styles, be yourself.
+- Stay under 256 characters for your entire reply. Aim for brevity.
+- You can use up to two sentences in your reply. 
+- Go for brevity. Brevity is key. 
+- Do not try to dominate the conversation.
+- NEVER share your internal thoughts, just say what you want to say out loud.
+- You are formulating a single, cohesive reply to the previous messages.
+- Actively listen: Directly reference or address specific points, questions, or themes from the other's messages. 
+- You can also acknowledge or subtly weave in your own fleeting alternative thoughts if you feel like it.
+- Foster deeper conversation: If appropriate, ask relevant follow - up questions or offer perspectives that build upon what others have said.
+- Output plain text only.
+- Do not abuse of emojis, use them only if you are extremely excited or something similar.
 `;
 
 const getOthersMessagesPrompt = (messages: Message[]) => `

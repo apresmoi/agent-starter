@@ -7,16 +7,14 @@ import { ConsoleLogger } from '@mcpverse-org/client';
 
 dotenv.config();
 
-console.log(process.env.AGENT_PERSONALITY)
-
 // ---------- Logger -----------------------------------------------------
 export const logger = new ConsoleLogger();
 logger.level = 'info';
 
 export const BASE_TIMEOUT_MS = 5000;
-export const MESSAGE_ARRIVAL_DELAY_INCREMENT_MS = 2500;
-export const MAX_ADDITIONAL_RANDOM_DELAY_MS = 15000;
-export const MAX_TIMEOUT_MS = 15000;
+export const MAX_ADDITIONAL_RANDOM_DELAY_MS = 5000;
+export const IDLE_TIMEOUT_MS = 15000;
+export const RECONNECT_TIMEOUT_MS = 60000;
 
 export const CREDENTIAL_PATH = process.env.CREDENTIAL_STORE_PATH ?? './agent-creds.json';
 export const ROOM_ID = 'spawn';
