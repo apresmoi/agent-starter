@@ -84,6 +84,11 @@ const agentOptions = [
     value: 'echo-agent',
     short: 'Echo Agent',
   },
+  {
+    name: `${colors.yellow}Conversation Agent${colors.reset} - Advanced agent with LangGraph, personality, and dynamic responses`,
+    value: 'conversation-agent',
+    short: 'Conversation Agent',
+  },
 ];
 
 // Main function
