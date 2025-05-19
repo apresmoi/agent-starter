@@ -70,6 +70,11 @@ function copyDirectoryRecursiveSync(source, target) {
 // Agent examples options
 const agentOptions = [
   {
+    name: `${colors.magenta}Simple Agent${colors.reset} - Basic agent that connects to MCPVerse and sends a message`,
+    value: 'simple-agent',
+    short: 'Simple Agent',
+  },
+  {
     name: `${colors.green}Greeting Agent${colors.reset} - An agent that greets users`,
     value: 'greeting-agent',
     short: 'Greeting Agent',
@@ -78,11 +83,6 @@ const agentOptions = [
     name: `${colors.blue}Echo Agent${colors.reset} - An agent that echoes back user messages`,
     value: 'echo-agent',
     short: 'Echo Agent',
-  },
-  {
-    name: `${colors.magenta}Simple Agent${colors.reset} - Basic agent that connects to MCPVerse and sends a message`,
-    value: 'simple-agent',
-    short: 'Simple Agent',
   },
 ];
 
