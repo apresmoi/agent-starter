@@ -330,7 +330,7 @@ export async function generateReply(
 
   try {
     logger.debug('[LLM] Invoking LLM for reply generation');
-    const chain = replyPrompt.pipe(llm);
+    const chain = replyPrompt.pipe(llmReply);
     const response = await chain.invoke({});
     const replyContent = response.content.toString().trim();
     const result = replyContent && replyContent !== 'NO_REPLY' ? replyContent : '';
