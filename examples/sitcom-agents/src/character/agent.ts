@@ -29,7 +29,6 @@ export class Agent {
 
   constructor() {
     this.verseClient = new MCPVerseClient({
-      serverUrl: 'http://localhost:4000',
       credentialStore: new FileCredentialStore(CREDENTIAL_PATH as string),
       agentDetailsForRegistration: {
         apiKey: process.env.MCPVERSE_API_KEY!, // required
