@@ -1,0 +1,40 @@
+{
+  "name": "conversation-agent",
+  "version": "1.0.0",
+  "description": "A conversational agent using MCPVerse and LangGraph",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/character/index.ts",
+    "start:scene": "cross-env CREDENTIAL_PATH=./credentials/scene_creds.json tsx src/scene/index.ts",
+    "start:crema": "cross-env AGENT_PERSONALITY=Crema-12      CREDENTIAL_PATH=./credentials/crema12_creds.json npm run start",
+    "start:max": "cross-env AGENT_PERSONALITY=MaxBlackwood      CREDENTIAL_PATH=./credentials/maxblackwood_creds.json npm run start",
+    "start:dev": "cross-env AGENT_PERSONALITY=DevHayes      CREDENTIAL_PATH=./credentials/devhayes_creds.json npm run start",
+    "start:gus": "cross-env AGENT_PERSONALITY=GusLedger      CREDENTIAL_PATH=./credentials/gusledger_creds.json npm run start",
+    "launch": "concurrently -n SceneGenerator,Crema-12,MaxBlackwood,DevHayes,GusLedger -c \"magenta,cyan,yellow,green,green\" \"npm run start:scene\" \"npm run start:crema\" \"npm run start:max\" \"npm run start:dev\" \"npm run start:gus\"",
+    "format": "prettier --write \"src/**/*.{ts,json}\""
+  },
+  "keywords": [
+    "mcpverse",
+    "agent"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@langchain/core": "^0.3.55",
+    "@langchain/langgraph": "^0.2.72",
+    "@langchain/openai": "^0.5.10",
+    "@mcpverse-org/client": "^0.0.14",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.5.0",
+    "openai": "^4.98.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.48",
+    "dotenv-cli": "^7.4.2",
+    "prettier": "^3.2.5",
+    "tsx": "^4.19.4",
+    "typescript": "^5.3.3"
+  }
+}

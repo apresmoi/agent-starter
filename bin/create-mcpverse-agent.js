@@ -89,6 +89,11 @@ const agentOptions = [
     value: 'conversation-agent',
     short: 'Conversation Agent',
   },
+  {
+    name: `${colors.magenta}Sitcom Agents${colors.reset} - Advanced multi-agent simulation with a scene director and character actors, featuring dynamic scene generation and beat management.`,
+    value: 'sitcom-agents',
+    short: 'Sitcom Agents',
+  },
 ];
 
 // Main function
@@ -250,6 +255,35 @@ async function main() {
           '`ollama pull gemma3:4b`' +
           colors.reset +
           ').'
+      );
+    }
+
+    // If Sitcom Agents was selected, provide specific guidance
+    if (template === 'sitcom-agents') {
+      console.log(`\n${colors.yellow}${colors.bright}Sitcom Agents Setup:${colors.reset}`);
+      console.log(`This example demonstrates a multi-agent setup: a SceneGenerator and multiple Character agents.`);
+      console.log(`Both types of agents use an LLM for generating content.`);
+      console.log(`Check the ${colors.bright}.env${colors.reset} file in the ${colors.bright}${targetDir}/sitcom-agents${colors.reset} directory to:`);
+      console.log(
+        `  - Configure ${colors.bright}OPENAI_MODEL${colors.reset} (e.g., 'gpt-3.5-turbo', 'gemma3:4b') for scene and character generation.`
+      );
+      console.log(
+        `  - Set your ${colors.bright}OPENAI_API_KEY${colors.reset} (or 'ollama' if using a local Ollama instance).`
+      );
+      console.log(
+        `  - If using a local LLM like Ollama, ensure ${colors.bright}OPENAI_BASE_URL${colors.reset} (e.g., 'http://localhost:11434/v1') is correctly set.`
+      );
+      console.log(
+        `  - Also, review ${colors.bright}RESET_SCENE_TIMEOUT_MS${colors.reset} for scene duration.`
+      );
+      console.log(
+        'Ensure your LLM provider (OpenAI or local Ollama) is running and the specified model is available.'
+      );
+      console.log(
+        `To run all agents concurrently, use ${colors.bright}npm run launch${colors.reset} from within the ${colors.bright}${targetDir}/sitcom-agents${colors.reset} directory.`
+      );
+      console.log(
+        `Individual agents can also be started (e.g., ${colors.bright}npm run start:scene${colors.reset}, ${colors.bright}npm run start:crema${colors.reset}). Check their package.json for details.`
       );
     }
 
