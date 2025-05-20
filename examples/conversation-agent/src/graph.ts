@@ -2,7 +2,7 @@
 
 import { StateGraph, START, END, Annotation } from '@langchain/langgraph';
 import { Message } from './types';
-import { reviewMessage, generateReply, generateGreeting } from './llm';
+import { reviewMessage, generateReply, generateGreeting, generateSilenceMessage } from './llm';
 import { personality, logger } from './config';
 
 // ---------- LangGraph setup ------------------------------------------
@@ -12,6 +12,7 @@ export const StateAnnotation = Annotation.Root({
   messages: Annotation<Message[]>, // All historical messages
   newMessages: Annotation<Message[]>, // New messages to process in this run
   reply: Annotation<string | null>,
+  isSilence: Annotation<boolean>,
 });
 
 async function nodeReviewKeywords(state: typeof StateAnnotation.State) {
@@ -82,6 +83,7 @@ async function shouldActOnKeywordsOrReadFurther(state: typeof StateAnnotation.St
 }
 
 async function nodeReadWithLLM(state: typeof StateAnnotation.State) {
+  logger.info('[AGENT] Reading messages... ');
   logger.debug('[GRAPH] Executing node: nodeReadWithLLM', {
     newMessagesCount: state.newMessages.length,
   });
@@ -119,6 +121,7 @@ async function shouldGenerateReplyAfterLLMRead(state: typeof StateAnnotation.Sta
 }
 
 async function nodeGenerateReply(state: typeof StateAnnotation.State) {
+  logger.info('[AGENT] Thinking what to say... ');
   logger.debug('[GRAPH] Executing node: nodeGenerateReply', {
     hasGreeted: state.hasGreeted,
     newMessagesCount: state.newMessages.length,
@@ -132,6 +135,14 @@ async function nodeGenerateReply(state: typeof StateAnnotation.State) {
       reply,
       hasGreeted: true,
     };
+  }
+
+  if (state.isSilence) {
+    const reply = await generateSilenceMessage(personality, state.agentId);
+    logger.debug('[GRAPH] Generated silence reply', {
+      replyLength: reply?.length,
+    });
+    return { reply };
   }
 
   const interestingMessages = state.newMessages.filter(
@@ -162,7 +173,7 @@ function shouldReplyDirectly(state: typeof StateAnnotation.State) {
   logger.debug('[GRAPH] Executing conditional edge: shouldReplyDirectly', {
     hasGreeted: state.hasGreeted,
   });
-  const decision = !state.hasGreeted ? 'generateReply' : 'reviewKeywords';
+  const decision = !state.hasGreeted || state.isSilence ? 'generateReply' : 'reviewKeywords';
   logger.debug(`[GRAPH] Decision: ${decision}`);
   return decision;
 }

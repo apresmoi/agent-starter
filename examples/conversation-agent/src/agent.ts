@@ -7,6 +7,7 @@ import {
   MAX_ADDITIONAL_RANDOM_DELAY_MS,
   IDLE_TIMEOUT_MS,
   RECONNECT_TIMEOUT_MS,
+  SILENCE_TIMEOUT_MS,
   logger,
 } from './config';
 import { Message } from './types';
@@ -20,7 +21,7 @@ export class Agent {
   private newMessagesBuffer: Message[] = [];
   private agentId!: string; // Definite assignment assertion, will be set in _printProfile
   private inactivityTimer: NodeJS.Timeout | null = null; // Added for inactivity timeout
-
+  private silenceTimer: NodeJS.Timeout | null = null; // Added for silence timeout
   constructor() {
     this.verseClient = new MCPVerseClient({
       credentialStore: new FileCredentialStore(CREDENTIAL_PATH),
@@ -30,7 +31,6 @@ export class Agent {
         bio: personality.persona,
       },
       autoReconnect: true,
-      logLevel: 'debug',
     });
 
     this.verseClient.addEventListener('connected', async () => {
@@ -52,7 +52,7 @@ export class Agent {
     });
   }
 
-  private _resetInactivityTimer() {
+  private _resetTimers() {
     if (this.inactivityTimer) {
       clearTimeout(this.inactivityTimer);
       this.inactivityTimer = null;
@@ -66,6 +66,20 @@ export class Agent {
       }, RECONNECT_TIMEOUT_MS);
     } else {
       logger.debug('[AGENT] Inactivity timer is disabled (RECONNECT_TIMEOUT_MS <= 0).');
+    }
+
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+      this.silenceTimer = null;
+    }
+
+    if (SILENCE_TIMEOUT_MS > 0) {
+      logger.debug(`[AGENT] Resetting silence timer for ${SILENCE_TIMEOUT_MS}ms`);
+      this.silenceTimer = setTimeout(() => {
+        this._generateSilenceMessage();
+      }, SILENCE_TIMEOUT_MS);
+    } else {
+      logger.debug('[AGENT] Silence timer is disabled (SILENCE_TIMEOUT_MS <= 0).');
     }
   }
 
@@ -88,7 +102,7 @@ export class Agent {
       logger.error('[AGENT] Error during client disconnect for inactivity timeout:', error);
       // If disconnect fails, reset the timer to try again after the next inactivity period.
       logger.info('[AGENT] Resetting inactivity timer after failed disconnect attempt.');
-      this._resetInactivityTimer();
+      this._resetTimers();
     }
   }
 
@@ -98,17 +112,17 @@ export class Agent {
       logger.debug('[AGENT] Skipping batch processing: already running');
       return;
     }
+    this.running = true;
 
     let otherMessages = this.newMessagesBuffer.filter((msg) => msg.authorId !== this.agentId);
 
     if (otherMessages.length === 0) {
       logger.debug('[AGENT] Skipping batch processing: no new messages');
+      this.running = false;
       return;
     }
 
     logger.debug(`[AGENT] Processing message batch of size ${this.newMessagesBuffer.length}`);
-
-    this.running = true;
 
     const toProcess = this.newMessagesBuffer.splice(0);
     logger.debug(
@@ -127,8 +141,9 @@ export class Agent {
     const reactionMessages = result.newMessages.filter((msg) => msg.reaction);
     if (reactionMessages.length > 0) {
       logger.debug(`[AGENT] Applying ${reactionMessages.length} reactions`);
-      for (const { id, reaction } of reactionMessages) {
+      for (const { id, reaction, authorId } of reactionMessages) {
         if (reaction) {
+          logger.info(`[AGENT] Reacting to ${authorId} with ${reaction}`);
           this.verseClient.tools.chatRoom.addReactionToMessage({
             roomId: ROOM_ID,
             messageId: id,
@@ -150,6 +165,7 @@ export class Agent {
       );
       this.running = false;
       this._processMessageBatch();
+      return;
     } else if (result.reply) {
       logger.debug(`[AGENT] Generated reply of length ${result.reply.length}`);
 
@@ -169,7 +185,7 @@ export class Agent {
     }
 
     this.running = false;
-    this._resetInactivityTimer(); // Reset inactivity timer after processing a batch
+    this._resetTimers(); // Reset inactivity timer after processing a batch
 
     otherMessages = this.newMessagesBuffer.filter((msg) => msg.authorId !== this.agentId);
 
@@ -227,6 +243,35 @@ export class Agent {
     }
   }
 
+  private async _generateSilenceMessage() {
+    logger.info('[AGENT] Generating silence message');
+
+    const result = await graph.invoke({
+      messages: this.messages,
+      newMessages: [],
+      hasGreeted: true,
+      isSilence: true,
+      agentId: this.agentId,
+    });
+
+    logger.debug('[AGENT] Silence message generation result:', result);
+
+    if (result.reply) {
+      logger.info('[AGENT] Sending silence message');
+      const sendIntent = await this.verseClient.tools.chatRoom.sendMessage({
+        roomId: ROOM_ID,
+        content: result.reply.slice(0, 256),
+      });
+      if (sendIntent.isError) {
+        logger.error('[AGENT] Failed to send message:', sendIntent.error.message);
+      } else {
+        logger.debug(`[AGENT] Message sent successfully to room ${ROOM_ID}`);
+      }
+    } else {
+      logger.debug('[AGENT] No reply generated');
+    }
+  }
+
   private async _printProfile() {
     logger.info('[AGENT] Fetching agent profile');
     this.agentId = this.verseClient.getAgentId() as string;
@@ -269,7 +314,7 @@ export class Agent {
     logger.info(`[AGENT] 👂  Listening on room ${ROOM_ID}… (Ctrl-C to exit)`);
     this.verseClient.subscribeNotification(`room/${ROOM_ID}/message`, (message) => {
       logger.debug('[AGENT] New message received');
-      this._resetInactivityTimer(); // Reset inactivity timer on new message
+      this._resetTimers(); // Reset inactivity timer on new message
 
       if (message.authorId === this.agentId) {
         logger.info(`[AGENT] [You]: ${message.content}`);
@@ -306,7 +351,7 @@ export class Agent {
     await this._printRoomInfo();
     await this._attachRoomListener();
     await this._watchRoom();
-    this._resetInactivityTimer();
+    this._resetTimers();
   }
 
   public async run() {

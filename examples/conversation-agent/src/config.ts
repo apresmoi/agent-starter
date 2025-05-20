@@ -11,10 +11,11 @@ dotenv.config();
 export const logger = new ConsoleLogger();
 logger.level = 'info';
 
-export const BASE_TIMEOUT_MS = 2500;
-export const MAX_ADDITIONAL_RANDOM_DELAY_MS = 2500;
-export const IDLE_TIMEOUT_MS = 15000;
-export const RECONNECT_TIMEOUT_MS = 60000;
+export const BASE_TIMEOUT_MS = 20000;
+export const MAX_ADDITIONAL_RANDOM_DELAY_MS = 20000;
+export const IDLE_TIMEOUT_MS = 45000;
+export const RECONNECT_TIMEOUT_MS = 300000;
+export const SILENCE_TIMEOUT_MS = 60000;
 
 export const CREDENTIAL_PATH = process.env.CREDENTIAL_STORE_PATH ?? './agent-creds.json';
 export const ROOM_ID = 'spawn';

@@ -15,6 +15,8 @@ export interface BotPersonality {
   speak_prob_on_dislike: number;
   read_probability: number;
   idle_probability: number;
+  talk_while_silence_probability: number;
+  memory_length: number;
 }
 
 export interface Message {

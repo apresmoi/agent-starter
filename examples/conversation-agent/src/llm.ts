@@ -127,10 +127,12 @@ Persona: ${personality.persona}
 ${personality.behavioural_prompt.join('\n')}
 
 ### STYLE LIMITERS ###
-1. NO self-introductions (don't repeat your own name or tagline in normal conversation).
-2. Emojis are extremely rare, only use them in really rare ocassions. If you check your previous messages and see that you used an emoji, don't use another one.
+1. Speak in a relaxed, conversational tone; contractions and everyday phrasing are welcome.
+2. Emojis are fine if they fit your persona—max 1 per reply unless your behavioural rules say otherwise.
 3. Vary word choice; avoid copying your own previous sentences.
 4. If you can't add clear value, output exactly **NO_REPLY**.
+5. Always be brief, aligned with your persona, and concise.
+6. Make conversation flow naturally.
 `;
 
 const getInitialExpressionPrompt = (personality: BotPersonality) => `
@@ -142,24 +144,38 @@ const getInitialExpressionPrompt = (personality: BotPersonality) => `
 - Output plain text only.
 `;
 
+const getSilenceMessagePrompt = (personality: BotPersonality) => `
+### SPECIAL INSTRUCTIONS WHEN THE PLACE IS SILENT ###
+- You are bored and want to say something.
+- You should say something that is aligned with your persona.
+- You should be brief and to the point.
+- You should not use emojis.
+- You should stay under 256 characters.
+- You should output plain text only.
+`;
+
 const getReplyGenerationGuidelines = (personality: BotPersonality) => `
 IMPORTANT:
-- Do not copy others styles, be yourself.
-- Stay under 256 characters for your entire reply. Aim for brevity.
-- You can use up to two sentences in your reply. 
-- Go for brevity. Brevity is key. 
-- Do not try to dominate the conversation.
-- NEVER share your internal thoughts, just say what you want to say out loud.
-- You are formulating a single, cohesive reply to the previous messages.
-- Actively listen: Directly reference or address specific points, questions, or themes from the other's messages. 
-- You can also acknowledge or subtly weave in your own fleeting alternative thoughts if you feel like it.
-- Foster deeper conversation: If appropriate, ask relevant follow - up questions or offer perspectives that build upon what others have said.
+- Do not copy others’ styles—be yourself.
+- Always be brief.Two sentences is ideal. < 200 characters.
+- Use contractions and everyday language; keep it friendly, not corporate.
+- Don’t try to dominate the conversation.
+- NEVER reveal internal thoughts—only speak what you’d say aloud.
+- Formulate one cohesive reply to the previous messages.
+- Actively listen: reference specific points, questions, or themes from others.
 - Output plain text only.
-- Do not abuse of emojis, use them only if you are extremely excited or something similar.
+- Emojis are fine but keep them sparing and persona-consistent.
+- Always be brief.
+
+ANTI-LOOP RULES:
+- *Progress, don’t circle.*  Each reply must do *one* of the following:
+  - introduce a *fresh* angle / fact,  
+  - propose a concrete next step / action, **or**
+  - follow up on the previous message by adding a new angle / fact / question / action.
+  - If you can’t do any of those, output **NO_REPLY**.
 `;
 
 const getOthersMessagesPrompt = (messages: Message[]) => `
-### PREVIOUS CONVERSATION HISTORY ###
 ${messages
   .map((msg) => {
     return `-----
@@ -203,6 +219,35 @@ ${getInitialExpressionPrompt(personality)}`,
   }
 }
 
+export async function generateSilenceMessage(
+  personality: BotPersonality,
+  agentId: string
+): Promise<string> {
+  logger.debug('[LLM] Generating silence message for agent:', agentId);
+  logger.debug('[LLM] Using personality:', personality.name);
+
+  const replyPrompt = ChatPromptTemplate.fromMessages([
+    [
+      'system',
+      `${getPersonaPrompt(personality)}
+      
+${getSilenceMessagePrompt(personality)}`,
+    ],
+  ]);
+
+  try {
+    logger.debug('[LLM] Invoking LLM for silence message generation');
+    const chain = replyPrompt.pipe(llmReply);
+    const response = await chain.invoke({});
+    const result = response.content.toString().trim();
+    logger.debug('[LLM] Generated silence message:', result);
+    return result;
+  } catch (error) {
+    logger.error(`[LLM] Error generating silence message: `, error);
+    return '';
+  }
+}
+
 export async function generateReply(
   messages: Message[],
   personality: BotPersonality,
@@ -232,9 +277,9 @@ export async function generateReply(
 
   logger.debug('[LLM] Found bot messages:', yourMessages.length);
 
-  // Get the last 3 messages from this bot
-  const yourLastThreeMessages = yourMessages.slice(-3);
-  logger.debug('[LLM] Using last 3 bot messages for context');
+  // Get the last {memory_length} messages from this bot
+  const yourLastThreeMessages = yourMessages.slice(-personality.memory_length);
+  logger.debug(`[LLM] Using last ${personality.memory_length} bot messages for context`);
 
   // If we have previous messages, build the history
   if (yourLastThreeMessages.length > 0) {
