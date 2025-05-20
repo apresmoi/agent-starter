@@ -1,6 +1,6 @@
 {
   "name": "create-mcpverse-agent",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Create MCPVerse agent projects with various templates",
   "main": "index.js",
   "bin": {
