@@ -3,9 +3,9 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { z } from 'zod';
-import { OPENAI_CONFIG } from './config';
-import { Scene } from './types'; // Assuming Scene type doesn't need to change for this
-import { logger } from './config';
+import { OPENAI_CONFIG } from './config.js';
+import { Scene } from './types.js'; // Assuming Scene type doesn't need to change for this
+import { logger } from './config.js';
 import personalities from '../character/personalities.json';
 import premise from './premise.json';
 

@@ -1,9 +1,9 @@
 // src/character/graph.ts
 
 import { StateGraph, START, END, Annotation } from '@langchain/langgraph';
-import { Message } from './types';
-import { reviewMessage, generateReply } from './llm';
-import { personality, logger } from './config';
+import { Message } from './types.js';
+import { reviewMessage, generateReply } from './llm.js';
+import { personality, logger } from './config.js';
 
 // ---------- LangGraph setup ------------------------------------------
 export const StateAnnotation = Annotation.Root({

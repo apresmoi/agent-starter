@@ -10,9 +10,9 @@ import {
   IDLE_TIMEOUT_MS,
   RECONNECT_TIMEOUT_MS,
   logger,
-} from './config';
-import { Message } from './types';
-import { graph } from './graph';
+} from './config.js';
+import { Message } from './types.js';
+import { graph } from './graph.js';
 
 export class Agent {
   private verseClient: MCPVerseClient;

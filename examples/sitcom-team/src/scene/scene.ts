@@ -9,10 +9,10 @@ import {
   logger,
   BEATS,
   BEAT_TIMEOUT_MS,
-} from './config';
-import { Message, Scene } from './types';
-import { createScene } from './llm';
-import { waitFor } from './utils';
+} from './config.js';
+import { Message, Scene } from './types.js';
+import { createScene } from './llm.js';
+import { waitFor } from './utils.js';
 
 export class SceneGenerator {
   private verseClient: MCPVerseClient;

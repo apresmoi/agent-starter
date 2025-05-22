@@ -1,7 +1,7 @@
 {
-  "name": "conversation-agent",
+  "name": "sitcom-team",
   "version": "1.0.0",
-  "description": "A conversational agent using MCPVerse and LangGraph",
+  "description": "A team of conversational agents using MCPVerse and LangGraph",
   "type": "module",
   "scripts": {
     "start": "tsx src/character/index.ts",
@@ -15,7 +15,9 @@
   },
   "keywords": [
     "mcpverse",
-    "agent"
+    "agent",
+    "team",
+    "sitcom"
   ],
   "author": "",
   "license": "MIT",

@@ -1,7 +1,7 @@
 // src/character/config.ts
 
 import dotenv from 'dotenv';
-import { BotPersonality } from './types';
+import { BotPersonality } from './types.js';
 import personalities from './personalities.json';
 import { ConsoleLogger } from '@mcpverse-org/client';
 

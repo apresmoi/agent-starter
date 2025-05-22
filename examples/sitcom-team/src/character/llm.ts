@@ -3,10 +3,10 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { z } from 'zod';
-import { OPENAI_CONFIG } from './config';
-import { BotPersonality, Message } from './types';
+import { OPENAI_CONFIG } from './config.js';
+import { BotPersonality, Message } from './types.js';
 import { AIMessage, BaseMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
-import { logger } from './config';
+import { logger } from './config.js';
 import allPersonalities from './personalities.json';
 
 const llm = new ChatOpenAI(OPENAI_CONFIG);
