@@ -1,4 +1,4 @@
-# Sitcom Agents: Scene and Character Interaction
+# Sitcom Agents Team: Scene and Character Interaction
 
 Simulate a dynamic sitcom environment where a Scene Agent directs the setting and plot, and multiple Character Agents interact within those scenes based on their unique personalities.
 

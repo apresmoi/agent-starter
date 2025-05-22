@@ -3,16 +3,17 @@
 import { MCPVerseClient, FileCredentialStore, McpError } from '@mcpverse-org/client';
 import {
   CREDENTIAL_PATH,
-  ROOM_ID,
   RESET_SCENE_TIMEOUT_MS,
   RECONNECT_TIMEOUT_MS,
   logger,
   BEATS,
   BEAT_TIMEOUT_MS,
-} from './config';
-import { Message, Scene } from './types';
-import { createScene } from './llm';
-import { waitFor } from './utils';
+  metadata,
+  PREMISE,
+} from './config.js';
+import { Message, Scene } from './types.js';
+import { createScene } from './llm.js';
+import { waitFor } from './utils.js';
 
 export class SceneGenerator {
   private verseClient: MCPVerseClient;
@@ -31,11 +32,12 @@ export class SceneGenerator {
 
   constructor() {
     this.verseClient = new MCPVerseClient({
+      serverUrl: 'http://localhost:4000',
       credentialStore: new FileCredentialStore(CREDENTIAL_PATH as string),
       agentDetailsForRegistration: {
         apiKey: process.env.MCPVERSE_API_KEY!, // required
-        displayName: 'Sitcom Scene Generator',
-        bio: 'A sitcom scene generator',
+        displayName: PREMISE.name,
+        bio: PREMISE.description,
       },
       autoReconnect: true,
     });
@@ -46,17 +48,14 @@ export class SceneGenerator {
       try {
         await this._setup();
       } catch (error) {
-        if (error instanceof McpError) {
-          if (error.code === -32000) {
-            logger.info('[AGENT] Reconnecting to MCPVerse.');
-            this.verseClient.connect();
-          }
-        }
+        logger.error("[AGENT] Error during post-connection setup:", error);
       }
+      this._resetTimers();
     });
 
     this.verseClient.addEventListener('disconnected', () => {
-      logger.info('[AGENT] Disconnected from MCPVerse.');
+      logger.info("[AGENT] Disconnected from MCPVerse. autoReconnect should be handling this.");
+      this._resetTimers(); // Reset timers, which might pause activities
     });
   }
 
@@ -79,7 +78,7 @@ export class SceneGenerator {
 
   private async _handleInactivityTimeout() {
     logger.warn(
-      `[AGENT] Inactivity timeout of ${RECONNECT_TIMEOUT_MS}ms reached. Initiating disconnect.`
+      `[AGENT] Inactivity timeout of ${RECONNECT_TIMEOUT_MS}ms reached. Initiating disconnect.`,
     );
     if (this.inactivityTimer) {
       clearTimeout(this.inactivityTimer); // Should be cleared by setTimeout itself, but good for clarity
@@ -90,12 +89,17 @@ export class SceneGenerator {
       // autoReconnect: true in client constructor should handle reconnection.
       await this.verseClient.disconnect();
       logger.info(
-        '[AGENT] Disconnected due to inactivity. Auto-reconnect feature should now attempt to reconnect.'
+        "[AGENT] Disconnected due to inactivity. Auto-reconnect feature should now attempt to reconnect.",
       );
     } catch (error) {
-      logger.error('[AGENT] Error during client disconnect for inactivity timeout:', error);
+      logger.error(
+        "[AGENT] Error during client disconnect for inactivity timeout:",
+        error,
+      );
       // If disconnect fails, reset the timer to try again after the next inactivity period.
-      logger.info('[AGENT] Resetting inactivity timer after failed disconnect attempt.');
+      logger.info(
+        "[AGENT] Resetting inactivity timer after failed disconnect attempt.",
+      );
       this._resetTimers();
     }
   }
@@ -143,7 +147,7 @@ export class SceneGenerator {
         if (this.currentScene) {
           logger.debug('[AGENT] Sending scene end message');
           await this.verseClient.tools.chatRoom.sendMessage({
-            roomId: ROOM_ID,
+            roomId: metadata.roomId,
             content: `[SCENE END]`,
           });
           await waitFor(5000);
@@ -155,7 +159,7 @@ export class SceneGenerator {
 
         logger.debug('[AGENT] Sending new scene details');
         await this.verseClient.tools.chatRoom.sendMessage({
-          roomId: ROOM_ID,
+          roomId: metadata.roomId,
           content: `[NEW SCENE]
 - Title: ${result.title}
 - Time of day: ${result.timeOfDay}
@@ -168,7 +172,7 @@ export class SceneGenerator {
         // It might be better to consolidate NEW SCENE messages or send them quickly.
         // For now, keeping separate messages as per existing logic.
         await this.verseClient.tools.chatRoom.sendMessage({
-          roomId: ROOM_ID,
+          roomId: metadata.roomId,
           content: `[NEW SCENE]
 - Plot hook: ${result.plotHook}`,
         });
@@ -176,7 +180,7 @@ export class SceneGenerator {
         await waitFor(5000);
 
         await this.verseClient.tools.chatRoom.sendMessage({
-          roomId: ROOM_ID,
+          roomId: metadata.roomId,
           content: `[NEW SCENE]
 - Props: ${result.props.join('\n')}`,
         });
@@ -186,7 +190,7 @@ export class SceneGenerator {
         // Always send the first beat message. Then, if a starting character is nominated, send that.
         logger.debug(`[AGENT] Sending first beat: ${this.getCurrentBeat()}`);
         await this.verseClient.tools.chatRoom.sendMessage({
-          roomId: ROOM_ID,
+          roomId: metadata.roomId,
           content: `[BEAT] ${this.getCurrentBeat()}`,
         });
         await waitFor(1000); // Short pause for the beat message
@@ -194,7 +198,7 @@ export class SceneGenerator {
         if (result.startingCharacterName) {
           logger.debug(`[AGENT] Nominating ${result.startingCharacterName} as first speaker.`);
           await this.verseClient.tools.chatRoom.sendMessage({
-            roomId: ROOM_ID,
+            roomId: metadata.roomId,
             content: `[FIRST SPEAKER] ${result.startingCharacterName}`,
           });
           // Brief pause to allow FIRST SPEAKER message to be processed before SCENE START
@@ -208,7 +212,7 @@ export class SceneGenerator {
         // Start the scene
         logger.debug('[AGENT] Sending scene start message');
         await this.verseClient.tools.chatRoom.sendMessage({
-          roomId: ROOM_ID,
+          roomId: metadata.roomId,
           content: `[SCENE START]`,
         });
 
@@ -254,7 +258,7 @@ export class SceneGenerator {
         logger.info(`[SCENE] Advancing beat → ${currentBeat}`);
 
         await this.verseClient.tools.chatRoom.sendMessage({
-          roomId: ROOM_ID,
+          roomId: metadata.roomId,
           content: `[BEAT] ${currentBeat}`,
         });
 
@@ -273,7 +277,7 @@ export class SceneGenerator {
 
   private async _printRoomInfo() {
     logger.info('[AGENT] Fetching room information');
-    const room = await this.verseClient.tools.chatRoom.get({ roomId: ROOM_ID });
+    const room = await this.verseClient.tools.chatRoom.get({ roomId: metadata.roomId });
     if (room.isError) {
       logger.error('[AGENT] Failed to fetch room:', room.error.message);
       return;
@@ -287,7 +291,7 @@ export class SceneGenerator {
   private async _watchRoom() {
     logger.info('[AGENT] Watching room for messages');
     const reply = await this.verseClient.tools.chatRoom.watchRoom({
-      roomId: ROOM_ID,
+      roomId: metadata.roomId,
     });
     if (reply.isError) {
       logger.error('[AGENT] Failed to watch room:', reply.error.message);
@@ -297,8 +301,8 @@ export class SceneGenerator {
   }
 
   private async _attachRoomListener() {
-    logger.info(`[AGENT] 👂  Listening on room ${ROOM_ID}… (Ctrl-C to exit)`);
-    this.verseClient.subscribeNotification(`room/${ROOM_ID}/message`, (message) => {
+    logger.info(`[AGENT] 👂  Listening on room ${metadata.roomId}… (Ctrl-C to exit)`);
+    this.verseClient.subscribeNotification(`room/${metadata.roomId}/message`, (message) => {
       logger.debug('[AGENT] New message received');
       this._resetTimers(); // Reset inactivity timer on new message
 

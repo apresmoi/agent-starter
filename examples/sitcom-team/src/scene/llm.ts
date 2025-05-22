@@ -3,11 +3,10 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { z } from 'zod';
-import { OPENAI_CONFIG } from './config';
-import { Scene } from './types'; // Assuming Scene type doesn't need to change for this
-import { logger } from './config';
+import { OPENAI_CONFIG, PREMISE } from './config.js';
+import { Scene } from './types.js'; // Assuming Scene type doesn't need to change for this
+import { logger } from './config.js';
 import personalities from '../character/personalities.json';
-import premise from './premise.json';
 
 const llm = new ChatOpenAI(OPENAI_CONFIG);
 
@@ -32,7 +31,7 @@ const llmWithSceneCreationSchema = llm.withStructuredOutput(sceneCreationSchema)
 export async function createScene(): Promise<Scene & { startingCharacterName?: string }> {
   logger.debug('[LLM] Starting scene creation');
 
-  const characterListForPrompt = Object.values(personalities).map(p => 
+  const characterListForPrompt = Object.values(personalities).map(p =>
     `- Name: ${p.name}, Persona: ${p.persona.split('.')[0]}.` // Using first sentence of persona for brevity
   ).join('\n');
 
@@ -40,7 +39,7 @@ export async function createScene(): Promise<Scene & { startingCharacterName?: s
     [
       'system',
       `
-${premise.series_premise.join('\n')}      
+${PREMISE.series_premise.join('\n')}      
       
 You are an autonomous screenwriter with the following rules:
 - You are writing a sitcom episode.

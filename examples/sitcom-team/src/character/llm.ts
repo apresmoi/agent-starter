@@ -3,10 +3,10 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { z } from 'zod';
-import { OPENAI_CONFIG } from './config';
-import { BotPersonality, Message } from './types';
+import { metadata, OPENAI_CONFIG, personality } from './config.js';
+import { BotPersonality, Message } from './types.js';
 import { AIMessage, BaseMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
-import { logger } from './config';
+import { logger } from './config.js';
 import allPersonalities from './personalities.json';
 
 const llm = new ChatOpenAI(OPENAI_CONFIG);
@@ -53,42 +53,23 @@ export async function reviewMessage(
     logger.debug('[LLM] Current beat:', currentBeat);
   }
 
-  const otherCharacterDescriptions = Object.values(allPersonalities)
-    .filter(p => p.name !== personality.name)
-    .map(p => `- ${p.name}: ${p.persona.split('.')[0]}.`)
-    .join('\n');
-
   const prompt = ChatPromptTemplate.fromMessages([
     [
       'system',
-      `${sceneDescription ? `---
-CURRENT SCENE:
-${sceneDescription}
----
-` : ''}
-${otherCharacterDescriptions ? `
-OTHER CHARACTERS POTENTIALLY IN SCENE:
+      `${getScenePrompt(personality, sceneDescription)}
 
-${otherCharacterDescriptions}
----
-` : ''}
-${currentBeat ? `
-CURRENT BEAT OF THE SCENE:
-${currentBeat}
----
-` : ''}
+${getBeatPrompt(currentBeat)}
       
 You are an autonomous entity with the following persona:
 Name: ${personality.name}
 Persona: ${personality.persona}
 Behavioural Prompt: ${personality.behavioural_prompt.join('\n')}
 
-INSTRUCTIONS
-1. Decide quickly: reply or ignore? (isInteresting).
-2. Mark like/dislike from your POV.
-3. Add ONE short thought (critic if like, compliment if dislike) ≤10 words.
-4. Optionally add ONE random intrusive thought ≤8 words.
-Return JSON only.`,
+Somebody has sent the following message. Analyze it based on your persona.
+Determine if it's interesting enough for you to reply, if you like it, or dislike it.
+Also, reflect briefly: if you liked it, what might a fleeting critical thought be? 
+If you disliked it, what might a fleeting positive thought be? Only consider thoughts aligned with your core persona.
+Respond using the structured output format.`,
     ],
     ['human', `Message: "{messageContent}"`],
   ]);
@@ -120,51 +101,135 @@ Return JSON only.`,
   }
 }
 
-const getPersonaPrompt = (personality: BotPersonality, sceneDescription: string | null, currentBeat: string | null) => {
+const getScenePrompt = (personality: BotPersonality, sceneDescription: string | null) => {
+  let prompt = ""
+
+  if (sceneDescription) {
+    prompt += `CURRENT SCENE:
+${sceneDescription}
+---
+`
+  }
+
   const otherCharacterDescriptions = Object.values(allPersonalities)
     .filter(p => p.name !== personality.name)
     .map(p => `- ${p.name}: ${p.persona.split('.')[0]}.`)
     .join('\n');
 
-  return `
-${sceneDescription ? `CURRENT SCENE:
-${sceneDescription}
----
-` : ''}${otherCharacterDescriptions ? `OTHER CHARACTERS POTENTIALLY IN SCENE:
+  if (otherCharacterDescriptions) {
+    prompt += `OTHER CHARACTERS POTENTIALLY IN SCENE:
 ${otherCharacterDescriptions}
 ---
-` : ''}${currentBeat ? `CURRENT BEAT OF THE SCENE:
-${currentBeat}
+`
+  }
+
+  return prompt
+}
+
+const getBeatPrompt = (beat: string | null) => {
+  if (!beat) {
+    return ""
+  }
+
+  let prompt = ""
+  switch (beat) {
+    case 'button':
+      prompt = `- The beat is "button" - this is the final beat of the scene.
+- Your goal is to deliver a strong punchline or tag that wraps up the scene.
+- Consider:
+  * What's the funniest or most impactful way to end this scene?
+  * How can you reference earlier setups or complications?
+  * What would be a satisfying conclusion for your character?
+- Keep it concise but impactful - this is your last chance to make an impression.`
+      break;
+    case 'setup':
+      prompt = `- The beat is "setup" - this is the opening beat of the scene.
+- Your goal is to establish the initial situation or premise.
+- Consider:
+  * What's the basic situation or conflict?
+  * What's your character's initial position or attitude?
+  * What elements might be useful for later beats?
+- Keep it clear and engaging - this sets the foundation for everything that follows.`
+      break;
+    case 'complication':
+      prompt = `- The beat is "complication" - this is where things get more interesting.
+- Your goal is to introduce a new element that changes the scene's direction.
+- Consider:
+  * What unexpected element can you introduce?
+  * How does this affect your character's goals or situation?
+  * What new opportunities or conflicts does this create?
+- Make it meaningful but not overwhelming - this should raise the stakes.`
+      break;
+    case 'twist':
+      prompt = `- The beat is "twist" - this is where the scene takes an unexpected turn.
+- Your goal is to reveal something surprising that changes our understanding.
+- Consider:
+  * What revelation would be most impactful?
+  * How does this change the scene's dynamics?
+  * What new possibilities does this open up?
+- Make it surprising but believable - this should feel earned, not random.`
+      break;
+  }
+
+  return `>>>>>> CURRENT BEAT OF THE SCENE: ${beat} <<<<<<<
+${prompt}
 ---
-` : ''}### YOUR ROLE & PERSONA ###
+Remember: Each beat builds on the previous ones. Your response should feel natural within the scene's progression.`
+}
+
+const getPersonaPrompt = (personality: BotPersonality) => {
+  return `### YOUR ROLE & PERSONA ###
 Name: ${personality.name}
 Persona: ${personality.persona}
 
 ### BEHAVIOUR RULES ###
-${personality.behavioural_prompt.join('\n')}
+${personality.behavioural_prompt.join("\n")}
 
 ### STYLE LIMITERS ###
-0. Two sentences max (≤22 words total). Do NOT repeat a signature catch-phrase more than once per SCENE.
-1. If possible, weave ONE element from **CURRENT SCENE**.
-2. HUMOR GUIDELINES
+0. Two sentences max (≤22 words total). 
+1. Do NOT repeat a signature catch-phrase more than once per SCENE.
+2. If possible, weave ONE element from **CURRENT SCENE**.
+3. HUMOR GUIDELINES
    a) Prefer situational wit, understatement, or mild exaggeration.
    b) Use one humorous device **unless** the current beat is "button", then aim for a punchline/tag.
    c) Skip jokes if scene is clearly serious.
-3. Avoid dense jargon; keep language simple.
-4. Vary words; no direct repetition of others' lines.
+3. Keep language simple, always.
+4. Vary words; do not repeat what others have said.
 5. Never echo scene meta like "[SCENE]".
 `;
 };
+
+const getReplyGenerationGuidelines = (personality: BotPersonality) => `
+IMPORTANT:
+- Always consider the current beat of the scene. This is highly important for your reply.
+- Do not copy others' styles—be yourself.
+- Always be brief. Two sentences is ideal. < 100 characters.
+- Use contractions and everyday language; keep it friendly, not corporate.
+- Don't try to dominate the conversation.
+- NEVER reveal internal thoughts—only speak what you'd say aloud.
+- Formulate one cohesive reply to the previous messages.
+- Actively listen: reference specific points, questions, or themes from others.
+- Output plain text only.
+- Emojis are fine but keep them sparing and persona-consistent.
+- Always be brief. The message has to be short.
+
+ANTI-LOOP RULES:
+- *Progress, don't circle.*  Each reply must do *one* of the following:
+  - introduce a *fresh* angle / fact,  
+  - propose a concrete next step / action, **or**
+  - follow up on the previous message by adding a new angle / fact / question / action.
+  - If you can't do any of those, output **NO_REPLY**.
+`;
 
 const getOthersMessagesPrompt = (messages: Message[]) => `
 ${messages
     .map((msg) => {
       return `-----
-- Author: ${msg.authorId}
+- Author: ${metadata.agents.find(a => a.agentId === msg.authorId)?.name || msg.authorId}
 - Message: ${msg.content}
-- ${msg.like ? 'You liked this message.' : 'You disliked this message.'}
-- A thought you had about this message: ${msg.thoughtAboutMessage}
-- A random intrusive thought you had while performing your review: ${msg.randomThought}
+- ${msg.like ? 'You like it.' : 'You dislike it.'}
+- You thought about this message: ${msg.thoughtAboutMessage}
+- You had a fleeting thought: ${msg.randomThought}
 -----
 `;
     })
@@ -189,7 +254,13 @@ export async function generateReply(
   }
 
   const systemMessage = new SystemMessage({
-    content: `${getPersonaPrompt(personality, sceneDescription, currentBeat)}`,
+    content: `${getScenePrompt(personality, sceneDescription)}
+
+${getBeatPrompt(currentBeat)}
+
+${getPersonaPrompt(personality)}
+
+${getReplyGenerationGuidelines(personality)}`,
   });
 
   const historyMessages: BaseMessage[] = [];
@@ -208,19 +279,19 @@ export async function generateReply(
   logger.debug('[LLM] Found bot messages:', yourMessages.length);
 
   // Get the last {memory_length} messages from this bot
-  const yourLastThreeMessages = yourMessages.slice(-personality.memory_length);
+  const yourLastMessages = yourMessages.slice(-personality.memory_length);
   logger.debug(`[LLM] Using last ${personality.memory_length} bot messages for context`);
 
   // If we have previous messages, build the history
-  if (yourLastThreeMessages.length > 0) {
-    for (let i = 0; i < yourLastThreeMessages.length; i++) {
-      const messageIndex = yourLastThreeMessages[i].index;
-      const nextMessageIndex = yourLastThreeMessages[i + 1]?.index ?? messages.length;
+  if (yourLastMessages.length > 0) {
+    for (let i = 0; i < yourLastMessages.length; i++) {
+      const messageIndex = yourLastMessages[i].index;
+      const nextMessageIndex = yourLastMessages[i + 1]?.index ?? messages.length;
 
       // Get all messages between this bot message and the next one (or end of all messages)
       const otherMessages = messages.slice(messageIndex + 1, nextMessageIndex);
       logger.debug(
-        `[LLM] Processing message group ${i + 1}/${yourLastThreeMessages.length}, found ${otherMessages.length} other messages`
+        `[LLM] Processing message group ${i + 1}/${yourLastMessages.length}, found ${otherMessages.length} other messages`
       );
 
       // Add the other messages to the history
@@ -233,17 +304,17 @@ export async function generateReply(
       }
 
       // Add the next message from the bot, if it's not the last one in the loop
-      if (i < yourLastThreeMessages.length - 1) {
+      if (i < yourLastMessages.length - 1) {
         historyMessages.push(
           new AIMessage({
-            content: yourLastThreeMessages[i + 1].message.content,
+            content: yourLastMessages[i + 1].message.content,
           })
         );
       }
     }
   } else {
     logger.debug('[LLM] No previous bot messages found, treating all messages as initial input');
-    // Bot has no messages in yourLastThreeMessages (e.g., first reply, or history is clear)
+    // Bot has no messages in yourLastMessages (e.g., first reply, or history is clear)
     // Treat all current messages as the initial human input.
     if (messages.length > 0) {
       historyMessages.push(

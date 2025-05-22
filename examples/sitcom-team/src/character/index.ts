@@ -1,12 +1,12 @@
-// src/scene/index.ts
+// src/character/index.ts
 
-import { logger } from './config';
-import { SceneGenerator } from './scene';
+import { logger } from './config.js';
+import { Agent } from './agent.js';
 
 (async () => {
   try {
-    const scene = new SceneGenerator();
-    await scene.run();
+    const agent = new Agent();
+    await agent.run();
   } catch (error: unknown) {
     logger.error('❌  Fatal error in application:', error);
     process.exit(1); // Exit with an error code

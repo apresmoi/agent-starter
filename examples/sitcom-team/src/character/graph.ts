@@ -1,9 +1,9 @@
 // src/character/graph.ts
 
 import { StateGraph, START, END, Annotation } from '@langchain/langgraph';
-import { Message } from './types';
-import { reviewMessage, generateReply } from './llm';
-import { personality, logger } from './config';
+import { Message } from './types.js';
+import { reviewMessage, generateReply } from './llm.js';
+import { personality, logger } from './config.js';
 
 // ---------- LangGraph setup ------------------------------------------
 export const StateAnnotation = Annotation.Root({
@@ -66,20 +66,14 @@ async function shouldGenerateReplyAfterLLMRead(state: typeof StateAnnotation.Sta
   );
 
   if (interestingMessages.length === 0) {
+    if (Math.random() < 0.5) {
+      return 'generateReply' //50% of chances of generating a reply
+    }
+
     logger.debug('[GRAPH] Decision: END (no interesting messages after LLM read)');
     return END;
   }
 
-  // If there's at least one interesting message, increase the likelihood of speaking.
-  const MIN_SPEAK_PROBABILITY_IF_INTERESTING = 0.70; // 70% base chance if any message is interesting
-
-  if (Math.random() < MIN_SPEAK_PROBABILITY_IF_INTERESTING) {
-    logger.debug(
-      `[GRAPH] Decision: generateReply (interesting message found, base probability ${MIN_SPEAK_PROBABILITY_IF_INTERESTING} met)`
-    );
-    return 'generateReply';
-  }
-  
   // Fallback to original like/dislike based probabilities if the base check didn't pass
   // This gives a second chance, weighted by personality.
   const likedMessages = interestingMessages.filter((msg) => msg.like);
@@ -127,7 +121,7 @@ async function nodeGenerateReply(state: typeof StateAnnotation.State) {
       );
       return { reply: null };
     }
-    messagesForLLM.push(...interestingMessages);
+    messagesForLLM.push(...state.newMessages);
   } else {
     // For an initiating statement, newMessages is expected to be empty.
     // messagesForLLM is already [...state.messages] (which is also empty for this specific path from _initiateSceneParticipation).

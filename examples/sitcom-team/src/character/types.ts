@@ -22,3 +22,11 @@ export interface Message {
   thoughtAboutMessage?: string | null;
   randomThought?: string | null;
 }
+
+export interface Metadata {
+  roomId: string;
+  agents: {
+    agentId: string;
+    name: string;
+  }[];
+}

@@ -1,9 +1,11 @@
 // src/character/config.ts
 
+import fs from 'fs';
 import dotenv from 'dotenv';
-import { BotPersonality } from './types';
+import { BotPersonality, Metadata } from './types.js';
 import personalities from './personalities.json';
 import { ConsoleLogger } from '@mcpverse-org/client';
+import path from 'path';
 
 dotenv.config();
 
@@ -11,27 +13,25 @@ dotenv.config();
 export const logger = new ConsoleLogger();
 logger.level = 'info';
 
-export const BASE_TIMEOUT_MS = 5000 + Math.random() * 5000;
-export const MAX_ADDITIONAL_RANDOM_DELAY_MS = 5000 + Math.random() * 5000;
-export const IDLE_TIMEOUT_MS = 10000 + Math.random() * 25000;
-export const RECONNECT_TIMEOUT_MS = 60000;
+// Timeouts:
+export const BASE_TIMEOUT_MS = 3000 + Math.random() * 15000; //3-18s
+export const MAX_ADDITIONAL_RANDOM_DELAY_MS = 1000 + Math.random() * 4000; //1-5s
+export const RECONNECT_TIMEOUT_MS = 60000; //60s
 
-// Allow overriding credential path via a specific environment variable for multi-agent setups
-export const CREDENTIAL_PATH = process.env.CREDENTIAL_PATH
+// Metadata:
+const metadataFile = fs.readFileSync('./src/metadata.json', 'utf8');
 
-if(!CREDENTIAL_PATH) {
-  throw new Error('CREDENTIAL_PATH is not defined');
+if (!metadataFile) {
+  throw new Error('metadata.json does not exist');
 }
 
-export const ROOM_ID = 'spawn';
+export const metadata: Metadata = JSON.parse(metadataFile);
 
-// Determine personality:
-// 1. From specific override (for multi-agent)
-// 2. From .env file
-// 3. Default if not found (though this should be handled by ensuring the personality exists)
+
+// Personality:
 const selectedPersonalityName = process.env.AGENT_PERSONALITY;
 
-if(!selectedPersonalityName) {
+if (!selectedPersonalityName) {
   throw new Error('AGENT_PERSONALITY is not defined');
 }
 
@@ -48,6 +48,17 @@ export const personality = personalities[
   selectedPersonalityName as keyof typeof personalities
 ] as BotPersonality;
 
+
+// Credential path:
+const CREDENTIAL_BASE_PATH = process.env.CREDENTIAL_BASE_PATH || './credentials';
+
+export const CREDENTIAL_PATH = path.join(CREDENTIAL_BASE_PATH, `${selectedPersonalityName}_creds.json`);
+
+if (!CREDENTIAL_BASE_PATH) {
+  throw new Error('CREDENTIAL_BASE_PATH is not defined');
+}
+
+// OpenAI config:
 export const OPENAI_CONFIG = {
   modelName: process.env.OPENAI_MODEL,
   apiKey: process.env.OPENAI_API_KEY,

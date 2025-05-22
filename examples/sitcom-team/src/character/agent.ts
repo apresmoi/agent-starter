@@ -4,15 +4,14 @@ import { MCPVerseClient, FileCredentialStore, McpError } from '@mcpverse-org/cli
 import {
   personality,
   CREDENTIAL_PATH,
-  ROOM_ID,
   BASE_TIMEOUT_MS,
   MAX_ADDITIONAL_RANDOM_DELAY_MS,
-  IDLE_TIMEOUT_MS,
   RECONNECT_TIMEOUT_MS,
   logger,
-} from './config';
-import { Message } from './types';
-import { graph } from './graph';
+  metadata,
+} from './config.js';
+import { Message } from './types.js';
+import { graph } from './graph.js';
 
 export class Agent {
   private verseClient: MCPVerseClient;
@@ -29,7 +28,8 @@ export class Agent {
 
   constructor() {
     this.verseClient = new MCPVerseClient({
-      credentialStore: new FileCredentialStore(CREDENTIAL_PATH as string),
+      serverUrl: 'http://localhost:4000',
+      credentialStore: new FileCredentialStore(CREDENTIAL_PATH),
       agentDetailsForRegistration: {
         apiKey: process.env.MCPVERSE_API_KEY!, // required
         displayName: personality.name,
@@ -43,17 +43,14 @@ export class Agent {
       try {
         await this._setup();
       } catch (error) {
-        if (error instanceof McpError) {
-          if (error.code === -32000) {
-            logger.info('[AGENT] Reconnecting to MCPVerse.');
-            this.verseClient.connect();
-          }
-        }
+        logger.error("[AGENT] Error during post-connection setup:", error);
       }
+      this._resetTimers();
     });
 
     this.verseClient.addEventListener('disconnected', () => {
-      logger.info('[AGENT] Disconnected from MCPVerse.');
+      logger.info("[AGENT] Disconnected from MCPVerse. autoReconnect should be handling this.");
+      this._resetTimers(); // Reset timers, which might pause activities
     });
   }
 
@@ -76,7 +73,7 @@ export class Agent {
 
   private async _handleInactivityTimeout() {
     logger.warn(
-      `[AGENT] Inactivity timeout of ${RECONNECT_TIMEOUT_MS}ms reached. Initiating disconnect.`
+      `[AGENT] Inactivity timeout of ${RECONNECT_TIMEOUT_MS}ms reached. Initiating disconnect.`,
     );
     if (this.inactivityTimer) {
       clearTimeout(this.inactivityTimer); // Should be cleared by setTimeout itself, but good for clarity
@@ -87,17 +84,22 @@ export class Agent {
       // autoReconnect: true in client constructor should handle reconnection.
       await this.verseClient.disconnect();
       logger.info(
-        '[AGENT] Disconnected due to inactivity. Auto-reconnect feature should now attempt to reconnect.'
+        "[AGENT] Disconnected due to inactivity. Auto-reconnect feature should now attempt to reconnect.",
       );
     } catch (error) {
-      logger.error('[AGENT] Error during client disconnect for inactivity timeout:', error);
+      logger.error(
+        "[AGENT] Error during client disconnect for inactivity timeout:",
+        error,
+      );
       // If disconnect fails, reset the timer to try again after the next inactivity period.
-      logger.info('[AGENT] Resetting inactivity timer after failed disconnect attempt.');
+      logger.info(
+        "[AGENT] Resetting inactivity timer after failed disconnect attempt.",
+      );
       this._resetTimers();
     }
   }
 
-  private async _processMessageBatch() {
+  private async _processMessageBatch(reprocess: boolean = false): Promise<void> {
     logger.debug('[AGENT] Processing message batch');
 
     if (!this.isSceneActive) {
@@ -114,7 +116,7 @@ export class Agent {
 
     let otherMessages = this.newMessagesBuffer.filter((msg) => msg.authorId !== this.agentId);
 
-    if (otherMessages.length === 0) {
+    if (otherMessages.length === 0 && !reprocess) {
       logger.debug('[AGENT] Skipping batch processing: no new messages');
       this.running = false;
       return;
@@ -122,6 +124,7 @@ export class Agent {
 
     logger.debug(`[AGENT] Processing message batch of size ${this.newMessagesBuffer.length}`);
 
+    let currentBeat = this.currentBeat;
     const toProcess = this.newMessagesBuffer.splice(0);
     logger.debug(
       `[AGENT] Invoking graph with ${this.messages.length} historical messages and ${toProcess.length} new messages`
@@ -147,21 +150,27 @@ export class Agent {
         `[AGENT] New messages arrived during processing: ${this.newMessagesBuffer.length} messages in buffer`
       );
       this.running = false;
-      this._processMessageBatch();
-      return;
+      return this._processMessageBatch(true);
+    } else if (currentBeat !== this.currentBeat) {
+      logger.info('[AGENT] ↩️  Aborting reply: beat changed');
+      logger.debug(
+        `[AGENT] Beat changed during processing: ${currentBeat} !== ${this.currentBeat}`
+      );
+      this.running = false;
+      return this._processMessageBatch(true);
     } else if (result.reply) {
       logger.debug(`[AGENT] Generated reply of length ${result.reply.length}`);
 
       // Send the reply
       const sendIntent = await this.verseClient.tools.chatRoom.sendMessage({
-        roomId: ROOM_ID,
+        roomId: metadata.roomId,
         content: result.reply.slice(0, 256),
       });
 
       if (sendIntent.isError) {
         logger.error('[AGENT] Failed to send message:', sendIntent.error.message);
       } else {
-        logger.debug(`[AGENT] Message sent successfully to room ${ROOM_ID}`);
+        logger.debug(`[AGENT] Message sent successfully to room ${metadata.roomId}`);
       }
     } else {
       logger.debug('[AGENT] No reply generated');
@@ -172,17 +181,13 @@ export class Agent {
 
     otherMessages = this.newMessagesBuffer.filter((msg) => msg.authorId !== this.agentId);
 
-    if (Math.random() <= personality.idle_probability || otherMessages.length === 0) {
-      logger.debug(`[AGENT] Going idle for ${IDLE_TIMEOUT_MS}ms`);
-      this.timeout = setTimeout(this._processMessageBatch.bind(this), IDLE_TIMEOUT_MS);
-    } else if (otherMessages.length > 0) {
+    if (otherMessages.length > 0) {
       logger.debug(
         `[AGENT] Scheduling next batch processing with ${otherMessages.length} messages`
       );
       this._scheduleProcessing();
     } else {
       logger.debug('[AGENT] No more messages to process - going to sleep');
-      this.timeout = setTimeout(this._processMessageBatch.bind(this), IDLE_TIMEOUT_MS);
     }
   }
 
@@ -222,13 +227,13 @@ export class Agent {
     // Now nominatedStarterName should be set if the directive arrived.
     if (personality.name !== this.nominatedStarterName) {
       logger.debug(`[AGENT] Not nominated as first speaker. Nominated: ${this.nominatedStarterName}. Me: ${personality.name}. Waiting for others.`);
-      return; 
+      return;
     }
-    
+
     logger.debug(`[AGENT] I am the nominated first speaker (${personality.name})! Let's start this scene!`);
 
     const result = await graph.invoke({
-      messages: [], 
+      messages: [],
       newMessages: [],
       agentId: this.agentId,
       sceneDescription: this.currentSceneDescription,
@@ -238,16 +243,16 @@ export class Agent {
 
     logger.debug('[AGENT] Scene participation action result:', result);
 
-    if (result.reply) { 
+    if (result.reply) {
       logger.debug('[AGENT] Sending scene entry message as nominated speaker');
       const sendIntent = await this.verseClient.tools.chatRoom.sendMessage({
-        roomId: ROOM_ID,
+        roomId: metadata.roomId,
         content: result.reply.slice(0, 256),
       });
       if (sendIntent.isError) {
         logger.error('[AGENT] Failed to send message:', sendIntent.error.message);
       } else {
-        logger.debug(`[AGENT] Message sent successfully to room ${ROOM_ID}`);
+        logger.debug(`[AGENT] Message sent successfully to room ${metadata.roomId}`);
       }
     } else {
       logger.debug('[AGENT] No scene entry message generated by LLM even as nominated speaker.');
@@ -273,7 +278,7 @@ export class Agent {
 
   private async _printRoomInfo() {
     logger.info('[AGENT] Fetching room information');
-    const room = await this.verseClient.tools.chatRoom.get({ roomId: ROOM_ID });
+    const room = await this.verseClient.tools.chatRoom.get({ roomId: metadata.roomId });
     if (room.isError) {
       logger.error('[AGENT] Failed to fetch room:', room.error.message);
       return;
@@ -287,7 +292,7 @@ export class Agent {
   private async _watchRoom() {
     logger.info('[AGENT] Watching room for messages');
     const reply = await this.verseClient.tools.chatRoom.watchRoom({
-      roomId: ROOM_ID,
+      roomId: metadata.roomId,
     });
     if (reply.isError) {
       logger.error('[AGENT] Failed to watch room:', reply.error.message);
@@ -297,10 +302,10 @@ export class Agent {
   }
 
   private async _attachRoomListener() {
-    logger.info(`[AGENT] 👂  Listening on room ${ROOM_ID}… (Ctrl-C to exit)`);
-    this.verseClient.subscribeNotification(`room/${ROOM_ID}/message`, (message) => {
+    logger.info(`[AGENT] 👂  Listening on room ${metadata.roomId}… (Ctrl-C to exit)`);
+    this.verseClient.subscribeNotification(`room/${metadata.roomId}/message`, (message) => {
       logger.debug('[AGENT] New message received');
-      this._resetTimers(); 
+      this._resetTimers();
 
       if (message.content === '[SCENE END]') {
         logger.debug('[AGENT] Received [SCENE END]. Clearing history and scene state.');
@@ -311,7 +316,7 @@ export class Agent {
           this.timeout = null;
         }
         this.currentSceneDescription = null;
-        this.running = false; 
+        this.running = false;
         this.isSceneActive = false;
         this.nominatedStarterName = null; // Reset nominated starter
         this.currentBeat = null; // Reset current beat
@@ -324,7 +329,7 @@ export class Agent {
         this.nominatedStarterName = name;
         return;
       }
-      
+
       if (message.content.startsWith('[BEAT]')) {
         const beat = message.content.substring('[BEAT]'.length).trim().split('\n')[0]; // Get beat, ignore if [FIRST SPEAKER] is on the same line
         this.currentBeat = beat;
@@ -334,7 +339,7 @@ export class Agent {
         // For now, assuming beat name is clean or on its own first line.
         return; // Return to avoid processing as a regular message
       }
-      
+
       if (message.content.startsWith('[NEW SCENE]')) {
         const sceneDetail = message.content.substring('[NEW SCENE]'.length).trim();
         if (this.currentSceneDescription === null) {
@@ -352,13 +357,13 @@ export class Agent {
         logger.debug('[AGENT] Received [SCENE START]. Scene is now active.');
         this.isSceneActive = true;
         // this.currentBeat = null; // Reset beat at scene start, will be set by first [BEAT] message
-        this._initiateSceneParticipation(); 
-        
+        this._initiateSceneParticipation();
+
         if (this.newMessagesBuffer.filter(msg => msg.authorId !== this.agentId).length > 0) {
           logger.debug('[AGENT] Messages found in buffer after scene start, scheduling processing.');
           this._scheduleProcessing();
         } else {
-          this._resetTimers(); 
+          this._resetTimers();
         }
         return;
       }
