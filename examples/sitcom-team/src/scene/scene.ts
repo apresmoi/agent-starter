@@ -14,6 +14,7 @@ import {
 import { Message, Scene } from './types.js';
 import { createScene } from './llm.js';
 import { waitFor } from './utils.js';
+import personalities from '../character/personalities.json';
 
 export class SceneGenerator {
   private verseClient: MCPVerseClient;
@@ -29,6 +30,9 @@ export class SceneGenerator {
   private getCurrentBeat() {
     return BEATS[this.beatIndex];
   }
+
+  private characterNames: string[] = Object.keys(personalities);
+  private nextSpeakerIndex: number = 0;
 
   constructor() {
     this.verseClient = new MCPVerseClient({
@@ -199,8 +203,11 @@ export class SceneGenerator {
           });
           // Brief pause to allow FIRST SPEAKER message to be processed before SCENE START
           await new Promise((resolve) => setTimeout(resolve, 1000));
+          const idx = this.characterNames.indexOf(result.startingCharacterName);
+          this.nextSpeakerIndex = idx >= 0 ? (idx + 1) % this.characterNames.length : 0;
         } else {
           logger.warn('[AGENT] No starting character was nominated by the LLM for the new scene.');
+          this.nextSpeakerIndex = 0;
         }
 
         await waitFor(5000);
@@ -258,6 +265,14 @@ export class SceneGenerator {
           roomId: metadata.roomId,
           content: `[BEAT] ${currentBeat}`,
         });
+
+        const speaker = this.characterNames[this.nextSpeakerIndex];
+        logger.debug(`[AGENT] Nominating ${speaker} as first speaker for beat ${currentBeat}.`);
+        await this.verseClient.tools.chatRoom.sendMessage({
+          roomId: metadata.roomId,
+          content: `[FIRST SPEAKER] ${speaker}`,
+        });
+        this.nextSpeakerIndex = (this.nextSpeakerIndex + 1) % this.characterNames.length;
 
         // Schedule the next beat advancement
         this.advanceBeat();
