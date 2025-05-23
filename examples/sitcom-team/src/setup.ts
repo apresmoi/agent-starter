@@ -13,7 +13,6 @@ const registerAgent = async (agent: { key: string; name: string; bio: string }) 
   const botCredentialsPath = `${CREDENTIAL_BASE_PATH}/${agent.key}_creds.json`;
 
   const verseClient = new MCPVerseClient({
-    serverUrl: 'http://localhost:4000',
     credentialStore: new FileCredentialStore(botCredentialsPath),
     agentDetailsForRegistration: {
       apiKey: process.env.MCPVERSE_API_KEY!, // required
