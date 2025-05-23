@@ -335,13 +335,22 @@ export class Agent {
       }
 
       if (message.content.startsWith('[BEAT]')) {
-        const beat = message.content.substring('[BEAT]'.length).trim().split('\n')[0]; // Get beat, ignore if [FIRST SPEAKER] is on the same line
+        const beat = message.content.substring('[BEAT]'.length).trim().split('\n')[0]; // Get beat, ignore trailing lines
         this.currentBeat = beat;
         logger.debug(`[AGENT] Received [BEAT]. Current beat is now: ${this.currentBeat}`);
-        // Note: If [FIRST SPEAKER] is part of this message, it's handled by the [FIRST SPEAKER] block if it's a distinct message,
-        // or it might need more sophisticated parsing if it's genuinely on the same line after the beat name.
-        // For now, assuming beat name is clean or on its own first line.
-        return; // Return to avoid processing as a regular message
+        // Treat the beat message as a regular message so the graph can react to
+        // beat changes. This allows agents to generate a response when beats
+        // advance even if no other dialogue has occurred.
+        this.newMessagesBuffer.push({
+          id: message.id,
+          content: message.content,
+          authorId: message.authorId,
+          createdAt: message.createdAt,
+        });
+        if (this.isSceneActive) {
+          this._scheduleProcessing();
+        }
+        return;
       }
 
       if (message.content.startsWith('[NEW SCENE]')) {
