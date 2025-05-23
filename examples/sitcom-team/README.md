@@ -1,14 +1,23 @@
 # Sitcom Agents Team: Scene and Character Interaction
 
+This project sets up a multi-agent system designed to simulate a sitcom. It includes:
+- **One Scene Agent**: Responsible for managing the overall scene, including generating plot points, controlling scene progression (beats), and setting the context (location, mood, props).
+- **Four Character Agents**: These are the actors in the sitcom. Their unique personalities, speaking styles, and behavioral patterns are defined in `src/character/personalities.json`. The default characters are Crema-12, MaxBlackwood, DevHayes, and GusLedger.
+
+These agents interact within a shared virtual room, with the Scene Agent orchestrating the narrative and the Character Agents reacting to the scene and each other based on their defined personas.
+
 Simulate a dynamic sitcom environment where a Scene Agent directs the setting and plot, and multiple Character Agents interact within those scenes based on their unique personalities.
 
 ## ⚡ Quickstart
 
-1.  **Clone the Repository**:
+1.  **Create Your Project**:
     ```bash
-    git clone https://github.com/mcpverse/agent-verse.git # Or your fork
-    cd agent-verse/examples/sitcom-agents
+    npx create-mcpverse-agent
     ```
+    Select "sitcom" when prompted. This will:
+    * Create your project directory
+    * Set up the room name and description
+    * Configure the initial premise and character personalities
 
 2.  **Set Up Environment Variables**:
     Copy the example environment file:
@@ -29,37 +38,59 @@ Simulate a dynamic sitcom environment where a Scene Agent directs the setting an
     npm install
     ```
 
-4.  **Run the Agents**:
+4.  **Run Setup**:
+    ```bash
+    npm run setup
+    ```
+    This will register all agents and create the room. Note: If you get rate limited, you may need to run this command twice as it also needs to create the permissions for the characters.
 
-    *   **Option 1: Launch all agents (Scene Generator + All Characters) concurrently (Recommended)**:
-        This is the easiest way to get the full ensemble running. It uses predefined personalities and credential paths for each agent.
-        ```bash
-        npm run launch
-        ```
-        This will open multiple terminal-like panes or logs for each agent: SceneGenerator, Crema-12, MaxBlackwood, DevHayes, and GusLedger.
+5.  **Run the Agents**:
+    ```bash
+    npm run launch
+    ```
+    This will start all agents (Scene Generator + All Characters) concurrently, opening multiple terminal-like panes or logs for each agent: SceneGenerator, Crema-12, MaxBlackwood, DevHayes, and GusLedger.
 
-    *   **Option 2: Run agents individually**:
-        You can run the Scene Agent and Character Agents in separate terminals.
+## Customizing Your Sitcom
 
-        *   **Terminal 1: Start the Scene Agent**:
-            ```bash
-            npm run start:scene
-            ```
-            This script specifically sets `CREDENTIAL_PATH=./credentials/scene_creds.json`.
+You can customize your sitcom by modifying two key files:
 
-        *   **Terminal 2 (and beyond): Start Character Agents individually**:
-            Use the dedicated scripts for each character. These scripts automatically set the correct `AGENT_PERSONALITY` and `CREDENTIAL_PATH`.
-            ```bash
-            # In a new terminal for Crema-12
-            npm run start:crema
+1. **`src/scene/premise.json`**: Define your sitcom's setting and premise
+   ```json
+   {
+     "name": "Your Sitcom Name",
+     "description": "Your sitcom's description",
+     "series_premise": [
+       "📍  Setting: Your sitcom's setting",
+       "🤖  Staff: List of staff characters",
+       "👥  Regulars: List of regular characters",
+       "🌀  Running gags: List of running gags",
+       "🎭  Tone: Overall tone and style"
+     ]
+   }
+   ```
 
-            # In another new terminal for MaxBlackwood
-            npm run start:max
+2. **`src/character/personalities.json`**: Define your characters' personalities
+   ```json
+   {
+     "CharacterName": {
+       "name": "Character Name",
+       "tagline": "Character's catchphrase",
+       "persona": "Detailed character description",
+       "behavioural_prompt": [
+         "You are **Character Name**",
+         "• Character's behavior rules",
+         "• More behavior rules..."
+       ],
+       "speak_prob_on_like": 0.5,
+       "speak_prob_on_dislike": 0.5,
+       "read_probability": 0.9,
+       "idle_probability": 0.1,
+       "memory_length": 5
+     }
+   }
+   ```
 
-            # And so on for other characters...
-            npm run start:dev
-            npm run start:gus
-            ```
+After modifying these files, you'll need to run `npm run setup` again to apply the changes.
 
 ## Features
 
