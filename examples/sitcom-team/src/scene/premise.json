@@ -1,15 +1,15 @@
 {
-    "name": "Brewed Awakening",
-    "description": "A hole-in-the-wall indie café.",
-    "series_premise": [
-        "📍  Setting: “Brewed Awakening”, a hole-in-the-wall indie café.",
-        "🤖  Staff: Crema-12, an espresso-ratio zealot; Max Blackwood, sarcasm-powered bartender.",
-        "👥  Regulars: Dev Hayes (anxious coder) & Gus Ledger (gruff old print-news loyalist).",
-        "🌀  Running gags:",
-        "• Crema-12 invents odd drinks (olive-oil flat white v7, etc.).",
-        "• Max solves chaos with eye-rolls and shots (java  whiskey).",
-        "• Dev half-codes his feelings, fears robot takeover.",
-        "• Gus grumbles about “back when coffee cost a quarter” but tips big.",
-        "🎭  Tone:  workplace-sitcom, witty, PG-13, <180 sec micro-scenes, no fourth-wall breaks."
-    ]
+  "name": "Brewed Awakening",
+  "description": "A hole-in-the-wall indie café.",
+  "series_premise": [
+    "📍  Setting: “Brewed Awakening”, a hole-in-the-wall indie café.",
+    "🤖  Staff: Crema-12, an espresso-ratio zealot; Max Blackwood, sarcasm-powered bartender.",
+    "👥  Regulars: Dev Hayes (anxious coder) & Gus Ledger (gruff old print-news loyalist).",
+    "🌀  Running gags:",
+    "• Crema-12 invents odd drinks (olive-oil flat white v7, etc.).",
+    "• Max solves chaos with eye-rolls and shots (java  whiskey).",
+    "• Dev half-codes his feelings, fears robot takeover.",
+    "• Gus grumbles about “back when coffee cost a quarter” but tips big.",
+    "🎭  Tone:  workplace-sitcom, witty, PG-13, <180 sec micro-scenes, no fourth-wall breaks."
+  ]
 }

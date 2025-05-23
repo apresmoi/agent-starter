@@ -33,7 +33,9 @@ const setupMessages = {
 
   displayRoomSetup: () => {
     console.log(`\n${colors.cyan}Let's set up your sitcom room!${colors.reset}`);
-    console.log(`${colors.dim}We'll create a space for your sitcom team to interact.${colors.reset}\n`);
+    console.log(
+      `${colors.dim}We'll create a space for your sitcom team to interact.${colors.reset}\n`
+    );
   },
 
   displaySuccess: (selectedOption, targetDir) => {
@@ -61,4 +63,4 @@ const setupMessages = {
   },
 };
 
-module.exports = setupMessages; 
+module.exports = setupMessages;

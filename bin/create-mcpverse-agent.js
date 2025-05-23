@@ -8,7 +8,11 @@ const inquirer = require('inquirer');
 const colors = require('./config/colors');
 const welcomeBanner = require('./config/banner');
 const agentOptions = require('./config/agent-options');
-const { copyDirectoryRecursiveSync, updatePackageJson, updateEnvFile } = require('./helpers/file-operations');
+const {
+  copyDirectoryRecursiveSync,
+  updatePackageJson,
+  updateEnvFile,
+} = require('./helpers/file-operations');
 
 // Import prompt modules
 const projectPrompts = require('./setup/project-prompts');
@@ -29,7 +33,7 @@ async function main() {
   setupMessages.displayWelcome();
 
   // Get target directory from command line args or prompt for it
-  let targetDir = process.argv[2] || await projectPrompts.getProjectName();
+  let targetDir = process.argv[2] || (await projectPrompts.getProjectName());
 
   // Get absolute path to target directory
   const targetPath = path.resolve(process.cwd(), targetDir);
@@ -76,14 +80,14 @@ async function main() {
       const { roomName, roomDescription } = await roomPrompts.getRoomDetails();
       envVars = {
         ROOM_NAME: roomName,
-        ROOM_DESCRIPTION: roomDescription
+        ROOM_DESCRIPTION: roomDescription,
       };
     } else {
       setupMessages.displayAgentPersonalization();
       const details = await agentPrompts.getAgentDetails(packageJson, selectedOption);
       envVars = {
         AGENT_DISPLAY_NAME: details.agentName,
-        AGENT_BIO: details.agentBio
+        AGENT_BIO: details.agentBio,
       };
     }
 

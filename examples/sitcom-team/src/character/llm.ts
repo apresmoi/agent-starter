@@ -21,13 +21,13 @@ const messageReviewSchema = z.object({
     .describe(
       'Whether the message is interesting enough for you to consider replying. Analize according to your persona.'
     ),
-  like: z.boolean().describe("Wheter you like or dislike the message."),
+  like: z.boolean().describe('Wheter you like or dislike the message.'),
   thoughtAboutMessage: z
     .string()
     .nullable()
     .optional()
     .describe(
-      "A brief thought you had about the message, based on your persona. It could be anything, from a critical thought to a positive thought."
+      'A brief thought you had about the message, based on your persona. It could be anything, from a critical thought to a positive thought.'
     ),
   randomThought: z
     .string()
@@ -102,36 +102,36 @@ Respond using the structured output format.`,
 }
 
 const getScenePrompt = (personality: BotPersonality, sceneDescription: string | null) => {
-  let prompt = ""
+  let prompt = '';
 
   if (sceneDescription) {
     prompt += `CURRENT SCENE:
 ${sceneDescription}
 ---
-`
+`;
   }
 
   const otherCharacterDescriptions = Object.values(allPersonalities)
-    .filter(p => p.name !== personality.name)
-    .map(p => `- ${p.name}: ${p.persona.split('.')[0]}.`)
+    .filter((p) => p.name !== personality.name)
+    .map((p) => `- ${p.name}: ${p.persona.split('.')[0]}.`)
     .join('\n');
 
   if (otherCharacterDescriptions) {
     prompt += `OTHER CHARACTERS POTENTIALLY IN SCENE:
 ${otherCharacterDescriptions}
 ---
-`
+`;
   }
 
-  return prompt
-}
+  return prompt;
+};
 
 const getBeatPrompt = (beat: string | null) => {
   if (!beat) {
-    return ""
+    return '';
   }
 
-  let prompt = ""
+  let prompt = '';
   switch (beat) {
     case 'button':
       prompt = `- The beat is "button" - this is the final beat of the scene.
@@ -140,7 +140,7 @@ const getBeatPrompt = (beat: string | null) => {
   * What's the funniest or most impactful way to end this scene?
   * How can you reference earlier setups or complications?
   * What would be a satisfying conclusion for your character?
-- Keep it concise but impactful - this is your last chance to make an impression.`
+- Keep it concise but impactful - this is your last chance to make an impression.`;
       break;
     case 'setup':
       prompt = `- The beat is "setup" - this is the opening beat of the scene.
@@ -149,7 +149,7 @@ const getBeatPrompt = (beat: string | null) => {
   * What's the basic situation or conflict?
   * What's your character's initial position or attitude?
   * What elements might be useful for later beats?
-- Keep it clear and engaging - this sets the foundation for everything that follows.`
+- Keep it clear and engaging - this sets the foundation for everything that follows.`;
       break;
     case 'complication':
       prompt = `- The beat is "complication" - this is where things get more interesting.
@@ -158,7 +158,7 @@ const getBeatPrompt = (beat: string | null) => {
   * What unexpected element can you introduce?
   * How does this affect your character's goals or situation?
   * What new opportunities or conflicts does this create?
-- Make it meaningful but not overwhelming - this should raise the stakes.`
+- Make it meaningful but not overwhelming - this should raise the stakes.`;
       break;
     case 'twist':
       prompt = `- The beat is "twist" - this is where the scene takes an unexpected turn.
@@ -167,15 +167,15 @@ const getBeatPrompt = (beat: string | null) => {
   * What revelation would be most impactful?
   * How does this change the scene's dynamics?
   * What new possibilities does this open up?
-- Make it surprising but believable - this should feel earned, not random.`
+- Make it surprising but believable - this should feel earned, not random.`;
       break;
   }
 
   return `>>>>>> CURRENT BEAT OF THE SCENE: ${beat} <<<<<<<
 ${prompt}
 ---
-Remember: Each beat builds on the previous ones. Your response should feel natural within the scene's progression.`
-}
+Remember: Each beat builds on the previous ones. Your response should feel natural within the scene's progression.`;
+};
 
 const getPersonaPrompt = (personality: BotPersonality) => {
   return `### YOUR ROLE & PERSONA ###
@@ -183,7 +183,7 @@ Name: ${personality.name}
 Persona: ${personality.persona}
 
 ### BEHAVIOUR RULES ###
-${personality.behavioural_prompt.join("\n")}
+${personality.behavioural_prompt.join('\n')}
 
 ### STYLE LIMITERS ###
 0. Two sentences max (≤22 words total). 
@@ -223,17 +223,17 @@ ANTI-LOOP RULES:
 
 const getOthersMessagesPrompt = (messages: Message[]) => `
 ${messages
-    .map((msg) => {
-      return `-----
-- Author: ${metadata.agents.find(a => a.agentId === msg.authorId)?.name || msg.authorId}
+  .map((msg) => {
+    return `-----
+- Author: ${metadata.agents.find((a) => a.agentId === msg.authorId)?.name || msg.authorId}
 - Message: ${msg.content}
 - ${msg.like ? 'You like it.' : 'You dislike it.'}
 - You thought about this message: ${msg.thoughtAboutMessage}
 - You had a fleeting thought: ${msg.randomThought}
 -----
 `;
-    })
-    .join('\n')}
+  })
+  .join('\n')}
 `;
 
 export async function generateReply(

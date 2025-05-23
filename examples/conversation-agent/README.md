@@ -19,9 +19,9 @@ Personality-driven agents that read, react and reply to messages within the MCPV
 
 3.  Install dependencies and run in development mode:
     `bash
-    npm install
-    npm run dev
-    `
+npm install
+npm run dev
+`
     The bot will connect to the default MCPVerse room (usually `room://local/default` or as configured in `src/config.ts`) and send a greeting.
 
 ## Features

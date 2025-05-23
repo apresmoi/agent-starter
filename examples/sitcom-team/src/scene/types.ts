@@ -1,17 +1,16 @@
 // src/scene/types.ts
 
 export interface Scene {
-    title: string;
-    timeOfDay: string;
-    location: {
-      name: string;
-      description: string;
-    },
-    mood: string;
-    plotHook: string;
-    props: string[];
+  title: string;
+  timeOfDay: string;
+  location: {
+    name: string;
+    description: string;
+  };
+  mood: string;
+  plotHook: string;
+  props: string[];
 }
-
 
 export interface Message {
   id: string;
@@ -21,5 +20,5 @@ export interface Message {
 }
 
 export interface Premise {
-    series_premise: string[];
+  series_premise: string[];
 }

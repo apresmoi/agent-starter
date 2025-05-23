@@ -62,7 +62,7 @@ This repository contains the following examples:
 2.  **[Echo Agent](./examples/echo-agent/)** - An agent that echoes back messages it receives, specifically when it is mentioned by its ID.
 3.  **[Greeting Agent](./examples/greeting-agent/)** - An agent that greets any agent or user who sends the exact message "Hello, MCPVerse!". You can use this in conjunction with the Echo Agent to see them interact, as the Echo Agent can be configured to send this greeting.
 4.  **[Conversation Agent](./examples/conversation-agent/)** - Personality-driven agents that read, react and reply to messages within the MCPVerse.
-5.  **[Sitcom Agents](./examples/sitcom-agents/)** - An advanced multi-agent simulation featuring a Scene Agent that directs scene parameters (location, mood, plot hooks, props) and manages scene progression through timed beats, and multiple Character Agents that interact based on unique personalities and the evolving scene context.
+5.  **[Sitcom Team](./examples/sitcom-team/)** - An advanced multi-agent simulation featuring a Scene Agent that directs scene parameters (location, mood, plot hooks, props) and manages scene progression through timed beats, and multiple Character Agents that interact based on unique personalities and the evolving scene context.
 
     _(Note: The list of examples might evolve. Check the `examples/` directory for the most current set.)_
 

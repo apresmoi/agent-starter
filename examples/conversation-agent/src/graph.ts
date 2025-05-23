@@ -1,9 +1,9 @@
 // src/graph.ts
 
-import { StateGraph, START, END, Annotation } from "@langchain/langgraph";
-import { Message } from "./types";
-import { reviewMessage, generateReply, generateGreeting, generateSilenceMessage } from "./llm";
-import { personality, logger } from "./config";
+import { StateGraph, START, END, Annotation } from '@langchain/langgraph';
+import { Message } from './types';
+import { reviewMessage, generateReply, generateGreeting, generateSilenceMessage } from './llm';
+import { personality, logger } from './config';
 
 // ---------- LangGraph setup ------------------------------------------
 export const StateAnnotation = Annotation.Root({
@@ -16,7 +16,7 @@ export const StateAnnotation = Annotation.Root({
 });
 
 async function nodeReviewKeywords(state: typeof StateAnnotation.State) {
-  logger.debug("[GRAPH] Executing node: nodeReviewKeywords", {
+  logger.debug('[GRAPH] Executing node: nodeReviewKeywords', {
     newMessagesCount: state.newMessages.length,
     agentId: state.agentId,
   });
@@ -32,10 +32,10 @@ async function nodeReviewKeywords(state: typeof StateAnnotation.State) {
 
       const contentLower = message.content.toLowerCase();
       const matchedLikeKeyword = personality.likes_keywords.find((keyword) =>
-        contentLower.includes(keyword.toLowerCase()),
+        contentLower.includes(keyword.toLowerCase())
       );
-      const matchedDislikeKeyword = personality.dislikes_keywords.find(
-        (keyword) => contentLower.includes(keyword.toLowerCase()),
+      const matchedDislikeKeyword = personality.dislikes_keywords.find((keyword) =>
+        contentLower.includes(keyword.toLowerCase())
       );
 
       if (matchedLikeKeyword) {
@@ -52,48 +52,39 @@ async function nodeReviewKeywords(state: typeof StateAnnotation.State) {
       return { ...message, interesting, like, dislike };
     }),
   };
-  logger.debug("[GRAPH] Finished node: nodeReviewKeywords", {
+  logger.debug('[GRAPH] Finished node: nodeReviewKeywords', {
     updatedMessagesCount: result.newMessages.length,
   });
   return result;
 }
 
-async function shouldActOnKeywordsOrReadFurther(
-  state: typeof StateAnnotation.State,
-) {
-  logger.debug(
-    "[GRAPH] Executing conditional edge: shouldActOnKeywordsOrReadFurther",
-    {
-      newMessagesCount: state.newMessages.length,
-    },
-  );
+async function shouldActOnKeywordsOrReadFurther(state: typeof StateAnnotation.State) {
+  logger.debug('[GRAPH] Executing conditional edge: shouldActOnKeywordsOrReadFurther', {
+    newMessagesCount: state.newMessages.length,
+  });
   const interestingMessagesFromKeywords = state.newMessages.filter(
-    (msg) => msg.interesting && msg.authorId !== state.agentId,
+    (msg) => msg.interesting && msg.authorId !== state.agentId
   );
 
   if (interestingMessagesFromKeywords.length > 0) {
-    logger.debug(
-      "[GRAPH] Decision: generateReply (interesting messages found from keywords)",
-    );
-    return "generateReply";
+    logger.debug('[GRAPH] Decision: generateReply (interesting messages found from keywords)');
+    return 'generateReply';
   }
 
   if (Math.random() <= personality.read_probability) {
-    logger.debug(
-      "[GRAPH] Decision: readWithLLM (randomly decided to read further)",
-    );
-    return "readWithLLM";
+    logger.debug('[GRAPH] Decision: readWithLLM (randomly decided to read further)');
+    return 'readWithLLM';
   }
 
   logger.debug(
-    "[GRAPH] Decision: END (no interesting messages from keywords and not reading further)",
+    '[GRAPH] Decision: END (no interesting messages from keywords and not reading further)'
   );
   return END;
 }
 
 async function nodeReadWithLLM(state: typeof StateAnnotation.State) {
   logger.info('[AGENT] Reading messages... ');
-  logger.debug("[GRAPH] Executing node: nodeReadWithLLM", {
+  logger.debug('[GRAPH] Executing node: nodeReadWithLLM', {
     newMessagesCount: state.newMessages.length,
   });
   const reviewedMessages: Message[] = await Promise.all(
@@ -103,50 +94,41 @@ async function nodeReadWithLLM(state: typeof StateAnnotation.State) {
       }
 
       return await reviewMessage(message, personality);
-    }),
+    })
   );
 
-  logger.debug("[GRAPH] Finished node: nodeReadWithLLM", {
+  logger.debug('[GRAPH] Finished node: nodeReadWithLLM', {
     reviewedMessagesCount: reviewedMessages.length,
   });
   return { newMessages: reviewedMessages };
 }
 
-async function shouldGenerateReplyAfterLLMRead(
-  state: typeof StateAnnotation.State,
-) {
-  logger.debug(
-    "[GRAPH] Executing conditional edge: shouldGenerateReplyAfterLLMRead",
-    {
-      newMessagesCount: state.newMessages.length,
-    },
-  );
+async function shouldGenerateReplyAfterLLMRead(state: typeof StateAnnotation.State) {
+  logger.debug('[GRAPH] Executing conditional edge: shouldGenerateReplyAfterLLMRead', {
+    newMessagesCount: state.newMessages.length,
+  });
   const interestingMessages = state.newMessages.filter(
-    (msg) => msg.interesting && msg.authorId !== state.agentId,
+    (msg) => msg.interesting && msg.authorId !== state.agentId
   );
 
   if (interestingMessages.length > 0) {
-    logger.debug(
-      "[GRAPH] Decision: generateReply (interesting messages found after LLM read)",
-    );
-    return "generateReply";
+    logger.debug('[GRAPH] Decision: generateReply (interesting messages found after LLM read)');
+    return 'generateReply';
   }
 
-  logger.debug(
-    "[GRAPH] Decision: END (no interesting messages after LLM read)",
-  );
+  logger.debug('[GRAPH] Decision: END (no interesting messages after LLM read)');
   return END;
 }
 
 async function nodeGenerateReply(state: typeof StateAnnotation.State) {
   logger.info('[AGENT] Thinking what to say... ');
-  logger.debug("[GRAPH] Executing node: nodeGenerateReply", {
+  logger.debug('[GRAPH] Executing node: nodeGenerateReply', {
     hasGreeted: state.hasGreeted,
     newMessagesCount: state.newMessages.length,
   });
   if (!state.hasGreeted) {
     const reply = await generateGreeting(personality, state.agentId);
-    logger.debug("[GRAPH] Generated greeting reply", {
+    logger.debug('[GRAPH] Generated greeting reply', {
       replyLength: reply?.length,
     });
     return {
@@ -157,18 +139,18 @@ async function nodeGenerateReply(state: typeof StateAnnotation.State) {
 
   if (state.isSilence) {
     const reply = await generateSilenceMessage(personality, state.agentId);
-    logger.debug("[GRAPH] Generated silence reply", {
+    logger.debug('[GRAPH] Generated silence reply', {
       replyLength: reply?.length,
     });
     return { reply };
   }
 
   const interestingMessages = state.newMessages.filter(
-    (msg) => msg.interesting && msg.authorId !== state.agentId,
+    (msg) => msg.interesting && msg.authorId !== state.agentId
   );
 
   if (interestingMessages.length === 0) {
-    logger.debug("[GRAPH] No interesting messages to reply to, reply is null");
+    logger.debug('[GRAPH] No interesting messages to reply to, reply is null');
     return {
       reply: null,
     };
@@ -177,9 +159,9 @@ async function nodeGenerateReply(state: typeof StateAnnotation.State) {
   const reply = await generateReply(
     [...state.messages, ...state.newMessages],
     personality,
-    state.agentId,
+    state.agentId
   );
-  logger.debug("[GRAPH] Generated reply based on interesting messages", {
+  logger.debug('[GRAPH] Generated reply based on interesting messages', {
     replyLength: reply?.length,
   });
   return {
@@ -188,35 +170,35 @@ async function nodeGenerateReply(state: typeof StateAnnotation.State) {
 }
 
 function shouldReplyDirectly(state: typeof StateAnnotation.State) {
-  logger.debug("[GRAPH] Executing conditional edge: shouldReplyDirectly", {
+  logger.debug('[GRAPH] Executing conditional edge: shouldReplyDirectly', {
     hasGreeted: state.hasGreeted,
   });
-  const decision = !state.hasGreeted || state.isSilence ? "generateReply" : "reviewKeywords";
+  const decision = !state.hasGreeted || state.isSilence ? 'generateReply' : 'reviewKeywords';
   logger.debug(`[GRAPH] Decision: ${decision}`);
   return decision;
 }
 
 export const graph = new StateGraph(StateAnnotation)
-  .addNode("reviewKeywords", nodeReviewKeywords, {
+  .addNode('reviewKeywords', nodeReviewKeywords, {
     retryPolicy: { maxAttempts: 3 },
   })
-  .addNode("readWithLLM", nodeReadWithLLM, { retryPolicy: { maxAttempts: 3 } })
-  .addNode("generateReply", nodeGenerateReply, {
+  .addNode('readWithLLM', nodeReadWithLLM, { retryPolicy: { maxAttempts: 3 } })
+  .addNode('generateReply', nodeGenerateReply, {
     retryPolicy: { maxAttempts: 3 },
   })
   .addConditionalEdges(START, shouldReplyDirectly, {
-    generateReply: "generateReply",
-    reviewKeywords: "reviewKeywords",
+    generateReply: 'generateReply',
+    reviewKeywords: 'reviewKeywords',
     [END]: END,
   })
-  .addConditionalEdges("reviewKeywords", shouldActOnKeywordsOrReadFurther, {
-    generateReply: "generateReply",
-    readWithLLM: "readWithLLM",
+  .addConditionalEdges('reviewKeywords', shouldActOnKeywordsOrReadFurther, {
+    generateReply: 'generateReply',
+    readWithLLM: 'readWithLLM',
     [END]: END,
   })
-  .addConditionalEdges("readWithLLM", shouldGenerateReplyAfterLLMRead, {
-    generateReply: "generateReply",
+  .addConditionalEdges('readWithLLM', shouldGenerateReplyAfterLLMRead, {
+    generateReply: 'generateReply',
     [END]: END,
   })
-  .addEdge("generateReply", END)
+  .addEdge('generateReply', END)
   .compile();

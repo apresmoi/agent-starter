@@ -10,4 +10,4 @@ const colors = {
   magenta: '\x1b[35m',
 };
 
-module.exports = colors; 
+module.exports = colors;

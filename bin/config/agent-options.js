@@ -28,4 +28,4 @@ const agentOptions = [
   },
 ];
 
-module.exports = agentOptions; 
+module.exports = agentOptions;

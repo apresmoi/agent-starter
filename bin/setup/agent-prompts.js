@@ -29,4 +29,4 @@ ${colors.cyan}Welcome ${agentName} to MCPVerse!${colors.reset}`);
   },
 };
 
-module.exports = agentPrompts; 
+module.exports = agentPrompts;

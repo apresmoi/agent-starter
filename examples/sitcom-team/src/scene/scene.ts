@@ -48,13 +48,13 @@ export class SceneGenerator {
       try {
         await this._setup();
       } catch (error) {
-        logger.error("[AGENT] Error during post-connection setup:", error);
+        logger.error('[AGENT] Error during post-connection setup:', error);
       }
       this._resetTimers();
     });
 
     this.verseClient.addEventListener('disconnected', () => {
-      logger.info("[AGENT] Disconnected from MCPVerse. autoReconnect should be handling this.");
+      logger.info('[AGENT] Disconnected from MCPVerse. autoReconnect should be handling this.');
       this._resetTimers(); // Reset timers, which might pause activities
     });
   }
@@ -78,7 +78,7 @@ export class SceneGenerator {
 
   private async _handleInactivityTimeout() {
     logger.warn(
-      `[AGENT] Inactivity timeout of ${RECONNECT_TIMEOUT_MS}ms reached. Initiating disconnect.`,
+      `[AGENT] Inactivity timeout of ${RECONNECT_TIMEOUT_MS}ms reached. Initiating disconnect.`
     );
     if (this.inactivityTimer) {
       clearTimeout(this.inactivityTimer); // Should be cleared by setTimeout itself, but good for clarity
@@ -89,23 +89,20 @@ export class SceneGenerator {
       // autoReconnect: true in client constructor should handle reconnection.
       await this.verseClient.disconnect();
       logger.info(
-        "[AGENT] Disconnected due to inactivity. Auto-reconnect feature should now attempt to reconnect.",
+        '[AGENT] Disconnected due to inactivity. Auto-reconnect feature should now attempt to reconnect.'
       );
     } catch (error) {
-      logger.error(
-        "[AGENT] Error during client disconnect for inactivity timeout:",
-        error,
-      );
+      logger.error('[AGENT] Error during client disconnect for inactivity timeout:', error);
       // If disconnect fails, reset the timer to try again after the next inactivity period.
-      logger.info(
-        "[AGENT] Resetting inactivity timer after failed disconnect attempt.",
-      );
+      logger.info('[AGENT] Resetting inactivity timer after failed disconnect attempt.');
       this._resetTimers();
     }
   }
 
   private async _handleSceneTimeout() {
-    logger.info(`[AGENT] Scene timeout of ${RESET_SCENE_TIMEOUT_MS}ms reached. Generating new scene.`);
+    logger.info(
+      `[AGENT] Scene timeout of ${RESET_SCENE_TIMEOUT_MS}ms reached. Generating new scene.`
+    );
     if (this.sceneResetTimer) {
       clearTimeout(this.sceneResetTimer);
       this.sceneResetTimer = null;
@@ -152,7 +149,7 @@ export class SceneGenerator {
           });
           await waitFor(5000);
           // Consider a brief pause if needed after SCENE END before new scene messages
-          // await new Promise(resolve => setTimeout(resolve, 1000)); 
+          // await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
         this.currentScene = result; // result now includes startingCharacterName
@@ -202,7 +199,7 @@ export class SceneGenerator {
             content: `[FIRST SPEAKER] ${result.startingCharacterName}`,
           });
           // Brief pause to allow FIRST SPEAKER message to be processed before SCENE START
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         } else {
           logger.warn('[AGENT] No starting character was nominated by the LLM for the new scene.');
         }
@@ -217,7 +214,8 @@ export class SceneGenerator {
         });
 
         // Start beat progression
-        if (BEATS.length > 0) { // Only start if there are beats defined
+        if (BEATS.length > 0) {
+          // Only start if there are beats defined
           this.advanceBeat();
         }
 

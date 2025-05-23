@@ -46,15 +46,15 @@ const updateEnvFile = (targetPath, apiKey, envVars) => {
   const envPath = path.join(targetPath, '.env');
   if (fs.existsSync(envPath)) {
     let envContent = fs.readFileSync(envPath, 'utf8');
-    
+
     // Update API key
     envContent = envContent.replace(/MCPVERSE_API_KEY=.*/g, `MCPVERSE_API_KEY=${apiKey}`);
-    
+
     // Update environment variables
     Object.entries(envVars).forEach(([key, value]) => {
       envContent = envContent.replace(new RegExp(`${key}=.*`, 'g'), `${key}=${value}`);
     });
-    
+
     fs.writeFileSync(envPath, envContent);
   }
 };
@@ -63,4 +63,4 @@ module.exports = {
   copyDirectoryRecursiveSync,
   updatePackageJson,
   updateEnvFile,
-}; 
+};

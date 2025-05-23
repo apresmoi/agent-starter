@@ -34,4 +34,4 @@ const apiPrompts = {
   },
 };
 
-module.exports = apiPrompts; 
+module.exports = apiPrompts;

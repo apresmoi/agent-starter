@@ -40,4 +40,4 @@ const projectPrompts = {
   },
 };
 
-module.exports = projectPrompts; 
+module.exports = projectPrompts;

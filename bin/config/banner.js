@@ -17,4 +17,4 @@ const welcomeBanner = `${colors.cyan}${colors.bright}
 ${colors.reset}
 `;
 
-module.exports = welcomeBanner; 
+module.exports = welcomeBanner;

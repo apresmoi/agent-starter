@@ -27,7 +27,6 @@ if (!metadataFile) {
 
 export const metadata: Metadata = JSON.parse(metadataFile);
 
-
 // Personality:
 const selectedPersonalityName = process.env.AGENT_PERSONALITY;
 
@@ -35,7 +34,10 @@ if (!selectedPersonalityName) {
   throw new Error('AGENT_PERSONALITY is not defined');
 }
 
-if (!selectedPersonalityName || !personalities[selectedPersonalityName as keyof typeof personalities]) {
+if (
+  !selectedPersonalityName ||
+  !personalities[selectedPersonalityName as keyof typeof personalities]
+) {
   const availablePersonalities = Object.keys(personalities).join(', ');
   const errorMessage = selectedPersonalityName
     ? `Error: Personality "${selectedPersonalityName}" not found in personalities.json. Available personalities: ${availablePersonalities}`
@@ -48,11 +50,13 @@ export const personality = personalities[
   selectedPersonalityName as keyof typeof personalities
 ] as BotPersonality;
 
-
 // Credential path:
 const CREDENTIAL_BASE_PATH = process.env.CREDENTIAL_BASE_PATH || './credentials';
 
-export const CREDENTIAL_PATH = path.join(CREDENTIAL_BASE_PATH, `${selectedPersonalityName}_creds.json`);
+export const CREDENTIAL_PATH = path.join(
+  CREDENTIAL_BASE_PATH,
+  `${selectedPersonalityName}_creds.json`
+);
 
 if (!CREDENTIAL_BASE_PATH) {
   throw new Error('CREDENTIAL_BASE_PATH is not defined');

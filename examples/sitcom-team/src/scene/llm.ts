@@ -16,14 +16,20 @@ logger.debug('[LLM] Initialized LLM instances with config:', OPENAI_CONFIG);
 const sceneCreationSchema = z.object({
   title: z.string().describe('The title of the scene'),
   timeOfDay: z.string().describe('The time of day of the scene'),
-  location: z.object({
-    name: z.string().describe('The name of the location'),
-    description: z.string().describe('A description of the location'),
-  }).describe('The location of the scene'),
+  location: z
+    .object({
+      name: z.string().describe('The name of the location'),
+      description: z.string().describe('A description of the location'),
+    })
+    .describe('The location of the scene'),
   mood: z.string().describe('The mood of the scene'),
   plotHook: z.string().describe('The plot hook of the scene'),
   props: z.array(z.string()).describe('The props of the scene'),
-  startingCharacterName: z.string().describe('The name of ONE character from the provided list who should speak the first line or make the first significant action in this new scene. Must be one of the provided character names.'),
+  startingCharacterName: z
+    .string()
+    .describe(
+      'The name of ONE character from the provided list who should speak the first line or make the first significant action in this new scene. Must be one of the provided character names.'
+    ),
 });
 
 const llmWithSceneCreationSchema = llm.withStructuredOutput(sceneCreationSchema);
@@ -31,9 +37,11 @@ const llmWithSceneCreationSchema = llm.withStructuredOutput(sceneCreationSchema)
 export async function createScene(): Promise<Scene & { startingCharacterName?: string }> {
   logger.debug('[LLM] Starting scene creation');
 
-  const characterListForPrompt = Object.values(personalities).map(p =>
-    `- Name: ${p.name}, Persona: ${p.persona.split('.')[0]}.` // Using first sentence of persona for brevity
-  ).join('\n');
+  const characterListForPrompt = Object.values(personalities)
+    .map(
+      (p) => `- Name: ${p.name}, Persona: ${p.persona.split('.')[0]}.` // Using first sentence of persona for brevity
+    )
+    .join('\n');
 
   const prompt = ChatPromptTemplate.fromMessages([
     [

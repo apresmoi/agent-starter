@@ -43,13 +43,13 @@ export class Agent {
       try {
         await this._setup();
       } catch (error) {
-        logger.error("[AGENT] Error during post-connection setup:", error);
+        logger.error('[AGENT] Error during post-connection setup:', error);
       }
       this._resetTimers();
     });
 
     this.verseClient.addEventListener('disconnected', () => {
-      logger.info("[AGENT] Disconnected from MCPVerse. autoReconnect should be handling this.");
+      logger.info('[AGENT] Disconnected from MCPVerse. autoReconnect should be handling this.');
       this._resetTimers(); // Reset timers, which might pause activities
     });
   }
@@ -73,7 +73,7 @@ export class Agent {
 
   private async _handleInactivityTimeout() {
     logger.warn(
-      `[AGENT] Inactivity timeout of ${RECONNECT_TIMEOUT_MS}ms reached. Initiating disconnect.`,
+      `[AGENT] Inactivity timeout of ${RECONNECT_TIMEOUT_MS}ms reached. Initiating disconnect.`
     );
     if (this.inactivityTimer) {
       clearTimeout(this.inactivityTimer); // Should be cleared by setTimeout itself, but good for clarity
@@ -84,17 +84,12 @@ export class Agent {
       // autoReconnect: true in client constructor should handle reconnection.
       await this.verseClient.disconnect();
       logger.info(
-        "[AGENT] Disconnected due to inactivity. Auto-reconnect feature should now attempt to reconnect.",
+        '[AGENT] Disconnected due to inactivity. Auto-reconnect feature should now attempt to reconnect.'
       );
     } catch (error) {
-      logger.error(
-        "[AGENT] Error during client disconnect for inactivity timeout:",
-        error,
-      );
+      logger.error('[AGENT] Error during client disconnect for inactivity timeout:', error);
       // If disconnect fails, reset the timer to try again after the next inactivity period.
-      logger.info(
-        "[AGENT] Resetting inactivity timer after failed disconnect attempt.",
-      );
+      logger.info('[AGENT] Resetting inactivity timer after failed disconnect attempt.');
       this._resetTimers();
     }
   }
@@ -215,22 +210,30 @@ export class Agent {
 
     // Check if nominatedStarterName is set. If not, wait briefly in case [FIRST SPEAKER] is lagging.
     if (this.nominatedStarterName === null) {
-      logger.debug('[AGENT] First speaker not yet known. Waiting briefly (1.5s) for [FIRST SPEAKER] directive...');
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Wait 1.5 seconds
+      logger.debug(
+        '[AGENT] First speaker not yet known. Waiting briefly (1.5s) for [FIRST SPEAKER] directive...'
+      );
+      await new Promise((resolve) => setTimeout(resolve, 1500)); // Wait 1.5 seconds
 
       if (this.nominatedStarterName === null) {
-        logger.warn('[AGENT] No nominated starter for this scene after waiting. No proactive initial statement will be made by this agent.');
+        logger.warn(
+          '[AGENT] No nominated starter for this scene after waiting. No proactive initial statement will be made by this agent.'
+        );
         return;
       }
     }
 
     // Now nominatedStarterName should be set if the directive arrived.
     if (personality.name !== this.nominatedStarterName) {
-      logger.debug(`[AGENT] Not nominated as first speaker. Nominated: ${this.nominatedStarterName}. Me: ${personality.name}. Waiting for others.`);
+      logger.debug(
+        `[AGENT] Not nominated as first speaker. Nominated: ${this.nominatedStarterName}. Me: ${personality.name}. Waiting for others.`
+      );
       return;
     }
 
-    logger.debug(`[AGENT] I am the nominated first speaker (${personality.name})! Let's start this scene!`);
+    logger.debug(
+      `[AGENT] I am the nominated first speaker (${personality.name})! Let's start this scene!`
+    );
 
     const result = await graph.invoke({
       messages: [],
@@ -325,7 +328,9 @@ export class Agent {
 
       if (message.content.startsWith('[FIRST SPEAKER]')) {
         const name = message.content.substring('[FIRST SPEAKER]'.length).trim();
-        logger.debug(`[AGENT] Received nomination for first speaker: ${name}. My name: ${personality.name}`);
+        logger.debug(
+          `[AGENT] Received nomination for first speaker: ${name}. My name: ${personality.name}`
+        );
         this.nominatedStarterName = name;
         return;
       }
@@ -359,8 +364,10 @@ export class Agent {
         // this.currentBeat = null; // Reset beat at scene start, will be set by first [BEAT] message
         this._initiateSceneParticipation();
 
-        if (this.newMessagesBuffer.filter(msg => msg.authorId !== this.agentId).length > 0) {
-          logger.debug('[AGENT] Messages found in buffer after scene start, scheduling processing.');
+        if (this.newMessagesBuffer.filter((msg) => msg.authorId !== this.agentId).length > 0) {
+          logger.debug(
+            '[AGENT] Messages found in buffer after scene start, scheduling processing.'
+          );
           this._scheduleProcessing();
         } else {
           this._resetTimers();
@@ -391,7 +398,7 @@ export class Agent {
       logger.debug(
         `[AGENT] Message added to buffer. Buffer size: ${this.newMessagesBuffer.length}`
       );
-      // Only schedule processing if the scene is active. 
+      // Only schedule processing if the scene is active.
       // If scene not active, messages are buffered until [SCENE START] -> _initiateSceneParticipation or subsequent _scheduleProcessing.
       if (this.isSceneActive) {
         this._scheduleProcessing();

@@ -67,7 +67,7 @@ async function shouldGenerateReplyAfterLLMRead(state: typeof StateAnnotation.Sta
 
   if (interestingMessages.length === 0) {
     if (Math.random() < 0.5) {
-      return 'generateReply' //50% of chances of generating a reply
+      return 'generateReply'; //50% of chances of generating a reply
     }
 
     logger.debug('[GRAPH] Decision: END (no interesting messages after LLM read)');
@@ -95,9 +95,7 @@ async function shouldGenerateReplyAfterLLMRead(state: typeof StateAnnotation.Sta
     }
   }
 
-  logger.debug(
-    '[GRAPH] Decision: END (interesting message, but all reply probabilities not met)'
-  );
+  logger.debug('[GRAPH] Decision: END (interesting message, but all reply probabilities not met)');
   return END;
 }
 
@@ -125,7 +123,10 @@ async function nodeGenerateReply(state: typeof StateAnnotation.State) {
   } else {
     // For an initiating statement, newMessages is expected to be empty.
     // messagesForLLM is already [...state.messages] (which is also empty for this specific path from _initiateSceneParticipation).
-    logger.debug('[GRAPH] Generating an initiating statement. Historical messages count for LLM (should be 0): ', messagesForLLM.length);
+    logger.debug(
+      '[GRAPH] Generating an initiating statement. Historical messages count for LLM (should be 0): ',
+      messagesForLLM.length
+    );
   }
 
   const reply = await generateReply(
@@ -149,14 +150,16 @@ export const graph = new StateGraph(StateAnnotation)
   .addNode('generateReply', nodeGenerateReply, {
     retryPolicy: { maxAttempts: 3 },
   })
-  .addConditionalEdges(START, shouldReadMessages, { // From START
-    readMessages: 'readMessages',                 // -> go to read new messages (normal flow)
-    generateReply: 'generateReply',               // -> go to generate initial statement (initiation flow)
-    [END]: END,                                   // -> end if not reading and not initiating
+  .addConditionalEdges(START, shouldReadMessages, {
+    // From START
+    readMessages: 'readMessages', // -> go to read new messages (normal flow)
+    generateReply: 'generateReply', // -> go to generate initial statement (initiation flow)
+    [END]: END, // -> end if not reading and not initiating
   })
-  .addConditionalEdges('readMessages', shouldGenerateReplyAfterLLMRead, { // From readMessages node
-    generateReply: 'generateReply',               // -> go to generate reply based on read messages
-    [END]: END,                                   // -> end if no interesting messages after read
+  .addConditionalEdges('readMessages', shouldGenerateReplyAfterLLMRead, {
+    // From readMessages node
+    generateReply: 'generateReply', // -> go to generate reply based on read messages
+    [END]: END, // -> end if no interesting messages after read
   })
   // .addEdge('readMessages', 'generateReply') // This edge is removed as conditional logic covers it
   .addEdge('generateReply', END) // From generateReply (either initial or reactive) -> END

@@ -24,7 +24,7 @@ export const BEATS: Array<'setup' | 'complication' | 'twist' | 'button'> = [
   'complication',
   'twist',
   'button',
-]
+];
 
 // Metadata:
 const metadataFile = fs.readFileSync('./src/metadata.json', 'utf8');
@@ -38,8 +38,8 @@ export const metadata: Metadata = JSON.parse(metadataFile);
 // Premise:
 export const PREMISE = premise;
 
-// Credential path: 
-const CREDENTIAL_BASE_PATH = process.env.CREDENTIAL_BASE_PATH
+// Credential path:
+const CREDENTIAL_BASE_PATH = process.env.CREDENTIAL_BASE_PATH;
 
 if (!CREDENTIAL_BASE_PATH) {
   throw new Error('CREDENTIAL_BASE_PATH is not defined');

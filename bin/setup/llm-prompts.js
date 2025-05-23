@@ -4,18 +4,18 @@ const colors = require('../config/colors');
 const llmPrompts = {
   setupLLM: async (colors) => {
     console.log(`\n${colors.yellow}${colors.bright}LLM Setup${colors.reset}`);
-    
+
     // Get LLM provider choice
     const provider = await llmPrompts.getLLMProvider();
-    
+
     let model, baseUrl, apiKey, hasApiKey;
-    
+
     if (provider === 'ollama') {
       model = await llmPrompts.getOllamaModel();
       baseUrl = 'http://localhost:11434/v1';
       apiKey = 'ollama';
       hasApiKey = true;
-      
+
       llmPrompts.displayOllamaInstructions(model);
     } else {
       model = await llmPrompts.getOpenAIModel();
@@ -30,7 +30,7 @@ const llmPrompts = {
       baseUrl,
       apiKey,
       hasApiKey,
-      provider
+      provider,
     };
   },
 
@@ -49,7 +49,7 @@ const llmPrompts = {
           {
             name: 'OpenAI',
             value: 'openai',
-            description: 'Use OpenAI\'s API',
+            description: "Use OpenAI's API",
           },
         ],
       },
@@ -136,7 +136,9 @@ const llmPrompts = {
     }
 
     console.log(`\n${colors.cyan}To get your OpenAI API key:${colors.reset}`);
-    console.log(`1. Go to ${colors.bright}https://platform.openai.com/settings/organization/api-keys${colors.reset}`);
+    console.log(
+      `1. Go to ${colors.bright}https://platform.openai.com/settings/organization/api-keys${colors.reset}`
+    );
     console.log(`2. Sign in or create an account`);
     console.log(`3. Navigate to the API keys section to create a new key`);
     console.log(`\nYou can add your API key to the .env file later.`);
@@ -147,9 +149,11 @@ const llmPrompts = {
   displayOllamaInstructions: (model) => {
     console.log(`\n${colors.cyan}Ollama Setup Instructions:${colors.reset}`);
     console.log(`1. Make sure Ollama is installed and running`);
-    console.log(`2. Pull the model by running: ${colors.bright}ollama pull ${model}${colors.reset}`);
+    console.log(
+      `2. Pull the model by running: ${colors.bright}ollama pull ${model}${colors.reset}`
+    );
     console.log(`3. The .env file has been configured with the default Ollama settings`);
   },
 };
 
-module.exports = llmPrompts; 
+module.exports = llmPrompts;

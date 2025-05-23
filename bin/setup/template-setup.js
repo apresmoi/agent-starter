@@ -21,7 +21,7 @@ const templateSetup = {
     } else if (template === 'sitcom-team') {
       await setupSitcomTeam(targetPath, agentName, inquirer, colors);
     }
-  }
+  },
 };
 
-module.exports = templateSetup; 
+module.exports = templateSetup;
